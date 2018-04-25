@@ -20,6 +20,7 @@ struct GEQDSKFile
     zmaxis::Float64         # Z of magnetic axis in meter
     simag::Float64          # Poloidal flux at magnetic axis in Weber/rad
     sibry::Float64          # Poloidal flux at the plasma boundary in Weber/rad
+    psi::Vector{Float64}    # Poloidal flux points
     current::Float64        # Plasma current in Ampere
     fpol::Vector{Float64}   # Poloidal current function in m-T, F = RBT on flux grid
     pres::Vector{Float64}   # Plasma pressure in nt / m2 on uniform flux grid
@@ -90,14 +91,14 @@ function readg(gfile)
     bcentr = take!(token)
 
     current = take!(token)
-    ssimag  = take!(token)
+    simag  = take!(token)
     xdum    = take!(token)
     rmaxis  = take!(token)
     xdum    = take!(token)
 
     zmaxis = take!(token)
     xdum   = take!(token)
-    ssibry = take!(token)
+    sibry = take!(token)
     xdum   = take!(token)
     xdum   = take!(token)
 
@@ -140,9 +141,10 @@ function readg(gfile)
 
     r = linspace(rleft, rleft + rdim, nw)
     z = linspace(zmid - 0.5*zdim, zmid + 0.5*zdim, nh)
+    psi = linspace(simag,sibry,nw)
 
     g = GEQDSKFile(gfile, nw,nh,r,z,rdim,zdim,rleft,zmid,nbbbs,rbbbs,zbbbs,limitr,rlim,zlim,
-                   rcentr,bcentr,rmaxis,zmaxis,simag,sibry,current,fpol,pres,ffprim,pprime,
+                   rcentr,bcentr,rmaxis,zmaxis,simag,sibry,psi,current,fpol,pres,ffprim,pprime,
                    qpsi,psirz)
 
     return g

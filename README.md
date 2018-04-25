@@ -1,7 +1,24 @@
 # EFIT
 
-[![Build Status](https://travis-ci.org/lstagner/EFIT.jl.svg?branch=master)](https://travis-ci.org/lstagner/EFIT.jl)
+EFIT (Equilibrium Fitting) is a computer code developed to translate measurements from plasma diagnostics into useful information like plasma geometry, stored energy, and current profiles.
 
-[![Coverage Status](https://coveralls.io/repos/lstagner/EFIT.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/lstagner/EFIT.jl?branch=master)
 
-[![codecov.io](http://codecov.io/github/lstagner/EFIT.jl/coverage.svg?branch=master)](http://codecov.io/github/lstagner/EFIT.jl?branch=master)
+EFIT.jl provides basic functionality for reading EFIT GEQDSK files.
+
+```
+julia> using EFIT
+
+julia> g = readg("test/g000001.01000")
+GEQDSKFile: "test/g000001.01000"
+
+julia> g.fpol
+101-element Array{Float64,1}:
+ -3.38249
+ -3.38691
+ -3.39044
+ -3.3932
+ -3.39546
+ -3.39738
+ -3.39903
+ ...
+```
