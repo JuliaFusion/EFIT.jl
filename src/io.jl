@@ -27,6 +27,9 @@ function read_array2d(t,n,m)
 end
 
 function readg(gfile)
+
+    isfile(gfile) || error("$(gfile) does not exist")
+
     f = open(gfile)
 
     desc = readline(f)
