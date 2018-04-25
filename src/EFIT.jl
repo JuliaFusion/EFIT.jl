@@ -1,5 +1,7 @@
 module EFIT
 
-# package code goes here
+include("io.jl")
+
+export readg
 
 end # module
