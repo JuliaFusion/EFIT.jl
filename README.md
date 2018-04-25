@@ -1,9 +1,9 @@
 # EFIT
 
-EFIT (Equilibrium Fitting) is a computer code developed to translate measurements from plasma diagnostics into useful information like plasma geometry, stored energy, and current profiles.
+[EFIT (Equilibrium Fitting)](https://fusion.gat.com/theory/Efit) is a computer code developed to translate measurements from plasma diagnostics into useful information like plasma geometry, stored energy, and current profiles.
 
 
-EFIT.jl provides basic functionality for reading EFIT GEQDSK files.
+EFIT.jl provides basic functionality for reading [EFIT GEQDSK](https://fusion.gat.com/theory/Efitgeqdsk) files.
 
 ```
 julia> using EFIT
