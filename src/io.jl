@@ -1,3 +1,38 @@
+struct GEQDSKFile
+    file::String            # Source file
+    nw::Int                 # Number of horizontal R grid points
+    nh::Int                 # Number of vertical Z grid points
+    r::Vector{Float64}      # R grid points
+    z::Vector{Float64}      # Z grid points
+    rdim::Float64           # Horizontal dimension in meter of computational box
+    zdim::Float64           # Vertical dimension in meter of computational box
+    rleft::Float64          # Minimum R in meter of rectangular computational box
+    zmid::Float64           # Z of center of computational box in meter
+    nbbbs::Int              # Number of boundary points
+    rbbbs::Vector{Float64}  # R of boundary points in meter
+    zbbbs::Vector{Float64}  # Z of boundary points in meter
+    limitr::Int             # Number of limiter points
+    rlim::Vector{Float64}   # R of surrounding limiter contour in meter
+    zlim::Vector{Float64}   # Z of surrounding limiter contour in meter
+    rcentr::Float64         # R in meter of vacuum toroidal magnetic field BCENTR
+    bcentr::Float64         # Vacuum toroidal magnetic field in Tesla at RCENTR
+    rmaxis::Float64         # R of magnetic axis in meter
+    zmaxis::Float64         # Z of magnetic axis in meter
+    simag::Float64          # Poloidal flux at magnetic axis in Weber/rad
+    sibry::Float64          # Poloidal flux at the plasma boundary in Weber/rad
+    current::Float64        # Plasma current in Ampere
+    fpol::Vector{Float64}   # Poloidal current function in m-T, F = RBT on flux grid
+    pres::Vector{Float64}   # Plasma pressure in nt / m2 on uniform flux grid
+    ffprim::Vector{Float64} # FF'(psi) in (mT)2 / (Weber/rad) on uniform fl ux grid
+    pprime::Vector{Float64} # P'(psi) in (nt/m2) / (Weber/rad) on uniform flux grid
+    qpsi::Vector{Float64}   # q values on uniform flu x grid from axis to boundary
+    psirz::Matrix{Float64}  # Poloidal flux in Weber/rad on the rectangular grid points
+end
+
+function Base.show(io::IO, g::GEQDSKFile)
+    print(io,"GEQDSKFile: \"",g.file,"\"")
+end
+
 function file_numbers(f)
     Channel(ctype=Float64) do c
         while ~eof(f)
@@ -50,8 +85,8 @@ function readg(gfile)
 
     rmaxis = take!(token)
     zmaxis = take!(token)
-    ssimag = take!(token)
-    ssibry = take!(token)
+    simag  = take!(token)
+    sibry  = take!(token)
     bcentr = take!(token)
 
     current = take!(token)
@@ -73,13 +108,13 @@ function readg(gfile)
     psirz = read_array2d(token,nw,nh)
     qpsi = read_array(token,nw)
 
-    nbdry = Int(take!(token))
+    nbbbs = Int(take!(token))
     limitr = Int(take!(token))
 
-    if nbdry > 0
-        rbbbs = zeros(nbdry)
-        zbbbs = zeros(nbdry)
-        for i=1:nbdry
+    if nbbbs > 0
+        rbbbs = zeros(nbbbs)
+        zbbbs = zeros(nbbbs)
+        for i=1:nbbbs
             rbbbs[i] = take!(token)
             zbbbs[i] = take!(token)
         end
@@ -106,12 +141,9 @@ function readg(gfile)
     r = linspace(rleft, rleft + rdim, nw)
     z = linspace(zmid - 0.5*zdim, zmid + 0.5*zdim, nh)
 
-    g = Dict(:time=>time,:nw=>nw, :nh=>nh, :r=>r, :z=>z, :rdim=>rdim, :zdim=>zdim,
-             :rcentr=>rcentr, :bcentr=>bcentr, :rleft=>rleft, :zmid=>zmid,
-             :rmaxis=>rmaxis, :zmaxis=>zmaxis, :ssimag=>ssimag,:ssbry=>ssibry,
-             :current=>current, :psirz=>psirz,:fpol=>fpol,:ffprim=>ffprim,:pprime=>pprime,
-             :qpsi=>qpsi, :nbdry=>nbdry, :bdry=>hcat(rbbbs,zbbbs),
-             :limitr=>limitr, :lim=>hcat(rlim,zlim))
+    g = GEQDSKFile(gfile, nw,nh,r,z,rdim,zdim,rleft,zmid,nbbbs,rbbbs,zbbbs,limitr,rlim,zlim,
+                   rcentr,bcentr,rmaxis,zmaxis,simag,sibry,current,fpol,pres,ffprim,pprime,
+                   qpsi,psirz)
 
     return g
 end

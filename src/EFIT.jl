@@ -2,6 +2,6 @@ module EFIT
 
 include("io.jl")
 
-export readg
+export readg, GEQDSKFile
 
 end # module
