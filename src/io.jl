@@ -1,6 +1,6 @@
 function file_numbers(f)
     Channel(ctype=Float64) do c
-        while true
+        while ~eof(f)
             line = readline(f)
             pattern = r"[+-]?\d*[\.]?\d+(?:[Ee][+-]?\d+)?"
             for p in eachmatch(pattern,line)
