@@ -2,8 +2,8 @@ struct GEQDSKFile
     file::String            # Source file
     nw::Int                 # Number of horizontal R grid points
     nh::Int                 # Number of vertical Z grid points
-    r::Vector{Float64}      # R grid points
-    z::Vector{Float64}      # Z grid points
+    r::Range{Float64}       # R grid points
+    z::Range{Float64}       # Z grid points
     rdim::Float64           # Horizontal dimension in meter of computational box
     zdim::Float64           # Vertical dimension in meter of computational box
     rleft::Float64          # Minimum R in meter of rectangular computational box
@@ -20,7 +20,7 @@ struct GEQDSKFile
     zmaxis::Float64         # Z of magnetic axis in meter
     simag::Float64          # Poloidal flux at magnetic axis in Weber/rad
     sibry::Float64          # Poloidal flux at the plasma boundary in Weber/rad
-    psi::Vector{Float64}    # Poloidal flux points
+    psi::Range{Float64}     # Poloidal flux points
     current::Float64        # Plasma current in Ampere
     fpol::Vector{Float64}   # Poloidal current function in m-T, F = RBT on flux grid
     pres::Vector{Float64}   # Plasma pressure in nt / m2 on uniform flux grid
