@@ -59,7 +59,7 @@ function read_array2d(t,n,m)
     for i=1:n, j=1:m
         data[i,j] = take!(t)
     end
-    return data
+    return data'
 end
 
 function readg(gfile)
