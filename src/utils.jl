@@ -15,5 +15,5 @@ function ellipticity(g::GEQDSKFile)
     a = (Rmax - Rmin)/2
     Zmin, Zmax = extrema(g.zbbbs)
 
-    return (Zmax - Zmin)/a
+    return (Zmax - Zmin)/(2a)
 end
