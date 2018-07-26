@@ -17,3 +17,19 @@ function ellipticity(g::GEQDSKFile)
 
     return (Zmax - Zmin)/(2a)
 end
+
+function elongation(g::GEQDSKFile)
+    ellipticity(g)
+end
+
+function major_radius(g::GEQDSKFile)
+    0.5*(+(extrema(g.rbbbs)...))
+end
+
+function minor_radius(g::GEQDSKFile)
+    -0.5*(-(extrema(g.rbbbs)...))
+end
+
+function aspect_ratio(g::GEQDSKFile)
+    major_radius(g)/minor_radius(g)
+end
