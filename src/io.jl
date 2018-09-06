@@ -1,33 +1,33 @@
 struct GEQDSKFile
-    file::String            # Source file
-    nw::Int                 # Number of horizontal R grid points
-    nh::Int                 # Number of vertical Z grid points
-    r::Range{Float64}       # R grid points
-    z::Range{Float64}       # Z grid points
-    rdim::Float64           # Horizontal dimension in meter of computational box
-    zdim::Float64           # Vertical dimension in meter of computational box
-    rleft::Float64          # Minimum R in meter of rectangular computational box
-    zmid::Float64           # Z of center of computational box in meter
-    nbbbs::Int              # Number of boundary points
-    rbbbs::Vector{Float64}  # R of boundary points in meter
-    zbbbs::Vector{Float64}  # Z of boundary points in meter
-    limitr::Int             # Number of limiter points
-    rlim::Vector{Float64}   # R of surrounding limiter contour in meter
-    zlim::Vector{Float64}   # Z of surrounding limiter contour in meter
-    rcentr::Float64         # R in meter of vacuum toroidal magnetic field BCENTR
-    bcentr::Float64         # Vacuum toroidal magnetic field in Tesla at RCENTR
-    rmaxis::Float64         # R of magnetic axis in meter
-    zmaxis::Float64         # Z of magnetic axis in meter
-    simag::Float64          # Poloidal flux at magnetic axis in Weber/rad
-    sibry::Float64          # Poloidal flux at the plasma boundary in Weber/rad
-    psi::Range{Float64}     # Poloidal flux points
-    current::Float64        # Plasma current in Ampere
-    fpol::Vector{Float64}   # Poloidal current function in m-T, F = RBT on flux grid
-    pres::Vector{Float64}   # Plasma pressure in nt / m2 on uniform flux grid
-    ffprim::Vector{Float64} # FF'(psi) in (mT)2 / (Weber/rad) on uniform fl ux grid
-    pprime::Vector{Float64} # P'(psi) in (nt/m2) / (Weber/rad) on uniform flux grid
-    qpsi::Vector{Float64}   # q values on uniform flu x grid from axis to boundary
-    psirz::Matrix{Float64}  # Poloidal flux in Weber/rad on the rectangular grid points
+    file::String                    # Source file
+    nw::Int                         # Number of horizontal R grid points
+    nh::Int                         # Number of vertical Z grid points
+    r::AbstractRange{Float64}       # R grid points
+    z::AbstractRange{Float64}       # Z grid points
+    rdim::Float64                   # Horizontal dimension in meter of computational box
+    zdim::Float64                   # Vertical dimension in meter of computational box
+    rleft::Float64                  # Minimum R in meter of rectangular computational box
+    zmid::Float64                   # Z of center of computational box in meter
+    nbbbs::Int                      # Number of boundary points
+    rbbbs::Vector{Float64}          # R of boundary points in meter
+    zbbbs::Vector{Float64}          # Z of boundary points in meter
+    limitr::Int                     # Number of limiter points
+    rlim::Vector{Float64}           # R of surrounding limiter contour in meter
+    zlim::Vector{Float64}           # Z of surrounding limiter contour in meter
+    rcentr::Float64                 # R in meter of vacuum toroidal magnetic field BCENTR
+    bcentr::Float64                 # Vacuum toroidal magnetic field in Tesla at RCENTR
+    rmaxis::Float64                 # R of magnetic axis in meter
+    zmaxis::Float64                 # Z of magnetic axis in meter
+    simag::Float64                  # Poloidal flux at magnetic axis in Weber/rad
+    sibry::Float64                  # Poloidal flux at the plasma boundary in Weber/rad
+    psi::AbstractRange{Float64}     # Poloidal flux points
+    current::Float64                # Plasma current in Ampere
+    fpol::Vector{Float64}           # Poloidal current function in m-T, F = RBT on flux grid
+    pres::Vector{Float64}           # Plasma pressure in nt / m2 on uniform flux grid
+    ffprim::Vector{Float64}         # FF'(psi) in (mT)2 / (Weber/rad) on uniform fl ux grid
+    pprime::Vector{Float64}         # P'(psi) in (nt/m2) / (Weber/rad) on uniform flux grid
+    qpsi::Vector{Float64}           # q values on uniform flu x grid from axis to boundary
+    psirz::Matrix{Float64}          # Poloidal flux in Weber/rad on the rectangular grid points
 end
 
 function Base.show(io::IO, g::GEQDSKFile)
@@ -71,10 +71,10 @@ function readg(gfile)
     desc = readline(f)
     s = split(desc)
 
-    time = parse(s[end-3])
-    idum = parse(s[end-2])
-    nw = parse(s[end-1])
-    nh = parse(s[end])
+    time = Meta.parse(s[end-3])
+    idum = Meta.parse(s[end-2])
+    nw = Meta.parse(s[end-1])
+    nh = Meta.parse(s[end])
 
     token = file_numbers(f)
 
@@ -139,9 +139,9 @@ function readg(gfile)
     close(f)
     close(token)
 
-    r = linspace(rleft, rleft + rdim, nw)
-    z = linspace(zmid - 0.5*zdim, zmid + 0.5*zdim, nh)
-    psi = linspace(simag,sibry,nw)
+    r = range(rleft, stop=rleft + rdim, length=nw)
+    z = range(zmid - 0.5*zdim, stop=zmid + 0.5*zdim, length=nh)
+    psi = range(simag,stop=sibry,length=nw)
 
     g = GEQDSKFile(gfile, nw,nh,r,z,rdim,zdim,rleft,zmid,nbbbs,rbbbs,zbbbs,limitr,rlim,zlim,
                    rcentr,bcentr,rmaxis,zmaxis,simag,sibry,psi,current,fpol,pres,ffprim,pprime,
