@@ -139,9 +139,9 @@ function readg(gfile)
     close(f)
     close(token)
 
-    r = range(rleft, stop=rleft + rdim, length=nw)
-    z = range(zmid - 0.5*zdim, stop=zmid + 0.5*zdim, length=nh)
-    psi = range(simag,stop=sibry,length=nw)
+    r = range(rleft, rleft + rdim, length=nw)
+    z = range(zmid - 0.5*zdim, zmid + 0.5*zdim, length=nh)
+    psi = range(simag, sibry, length=nw)
 
     g = GEQDSKFile(gfile, nw,nh,r,z,rdim,zdim,rleft,zmid,nbbbs,rbbbs,zbbbs,limitr,rlim,zlim,
                    rcentr,bcentr,rmaxis,zmaxis,simag,sibry,psi,current,fpol,pres,ffprim,pprime,
