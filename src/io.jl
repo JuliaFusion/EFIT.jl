@@ -34,6 +34,8 @@ function Base.show(io::IO, g::GEQDSKFile)
     print(io,"GEQDSKFile: \"",g.file,"\"")
 end
 
+Base.broadcastable(g::GEQDSKFile) = (g,)
+
 function file_numbers(f)
     Channel(ctype=Float64) do c
         while ~eof(f)
