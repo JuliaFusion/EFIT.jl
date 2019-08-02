@@ -1,5 +1,5 @@
 function triangularity(g::GEQDSKFile)
-    Rmin, Rmax = extrema(g.rbbbs)
+    Rmin, Rmax = extrema(filter(!iszero,g.rbbbs))
     Rgeo = (Rmin + Rmax)/2
     a = (Rmax - Rmin)/2
     Rupper = g.rbbbs[indmax(g.zbbbs)]
@@ -11,7 +11,7 @@ function triangularity(g::GEQDSKFile)
 end
 
 function ellipticity(g::GEQDSKFile)
-    Rmin, Rmax = extrema(g.rbbbs)
+    Rmin, Rmax = extrema(filter(!iszero,g.rbbbs))
     a = (Rmax - Rmin)/2
     Zmin, Zmax = extrema(g.zbbbs)
 
@@ -23,11 +23,11 @@ function elongation(g::GEQDSKFile)
 end
 
 function major_radius(g::GEQDSKFile)
-    0.5*(+(extrema(g.rbbbs)...))
+    0.5*(+(extrema(filter(!iszero,g.rbbbs))...))
 end
 
 function minor_radius(g::GEQDSKFile)
-    -0.5*(-(extrema(g.rbbbs)...))
+    -0.5*(-(extrema(filter(!iszero,g.rbbbs))...))
 end
 
 function aspect_ratio(g::GEQDSKFile)
