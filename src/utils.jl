@@ -2,8 +2,8 @@ function triangularity(g::GEQDSKFile)
     Rmin, Rmax = extrema(filter(!iszero,g.rbbbs))
     Rgeo = (Rmin + Rmax)/2
     a = (Rmax - Rmin)/2
-    Rupper = g.rbbbs[indmax(g.zbbbs)]
-    Rlower = g.rbbbs[indmin(g.zbbbs)]
+    Rupper = g.rbbbs[argmax(g.zbbbs)]
+    Rlower = g.rbbbs[argmin(g.zbbbs)]
     delta_upper = (Rgeo - Rupper)/a
     delta_lower = (Rgeo - Rlower)/a
 
