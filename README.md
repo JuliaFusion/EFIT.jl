@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/JuliaFusion/EFIT.jl.svg?branch=master)](https://travis-ci.org/JuliaFusion/EFIT.jl)
+
 # EFIT
 
 [EFIT (Equilibrium Fitting)](https://fusion.gat.com/theory/Efit) is a computer code developed to translate measurements from plasma diagnostics into useful information like plasma geometry, stored energy, and current profiles.
