@@ -4,4 +4,4 @@ author = ["Luke Stagner <stagnerl@fusion.gat.com>"]
 version = "0.1.0"
 
 [compat]
-julia = "≥ 1.1.0"
+julia = "^1.2"
