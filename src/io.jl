@@ -108,7 +108,7 @@ function readg(gfile)
     pres = read_array(token,nw)
     ffprim = read_array(token,nw)
     pprime = read_array(token,nw)
-    psirz = read_array2d(token,nw,nh)
+    psirz = read_array2d(token,nh,nw)
     qpsi = read_array(token,nw)
 
     nbbbs = Int(take!(token))
