@@ -10,6 +10,20 @@ function triangularity(g::GEQDSKFile)
     return delta_lower, delta_upper
 end
 
+function triangularity(g::GEQDSKFile,ula::Symbol)
+    δs = triangularity(g)
+    if ula == :lower
+        δ = δs[1]
+    elseif ula == :upper
+        δ = δs[2]
+    elseif ula == :average
+        δ = 0.5*sum(δs)
+    else
+        error("Unknown symbol ($ula): Only :lower, :upper, and :average accepted")
+    end
+    return δ
+end
+
 function ellipticity(g::GEQDSKFile)
     Rmin, Rmax = extrema(filter(!iszero,g.rbbbs))
     a = (Rmax - Rmin)/2
@@ -20,6 +34,10 @@ end
 
 function elongation(g::GEQDSKFile)
     ellipticity(g)
+end
+
+function elevation(g::GEQDSKFile)
+    0.5*(+(extrema(g.zbbbs)...))
 end
 
 function major_radius(g::GEQDSKFile)
