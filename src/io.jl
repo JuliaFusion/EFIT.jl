@@ -1,4 +1,4 @@
-struct GEQDSKFile
+mutable struct GEQDSKFile
     file::String                    # Source file
     nw::Int                         # Number of horizontal R grid points
     nh::Int                         # Number of vertical Z grid points
