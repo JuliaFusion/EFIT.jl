@@ -28,6 +28,7 @@ mutable struct GEQDSKFile
     pprime::Vector{Float64}         # P'(psi) in (nt/m2) / (Weber/rad) on uniform flux grid
     qpsi::Vector{Float64}           # q values on uniform flu x grid from axis to boundary
     psirz::Matrix{Float64}          # Poloidal flux in Weber/rad on the rectangular grid points
+    rhovn::Vector{Float64}          # Square root of toroidal flux, normalized
 end
 
 function Base.show(io::IO, g::GEQDSKFile)
@@ -138,6 +139,16 @@ function readg(gfile)
         zlim = [0.0]
     end
 
+    if !eof(f)
+        xdum = take!(token)
+        xdum = take!(token)
+        xdum = take!(token)
+        rhovn = read_array(token,nw)
+        xdum = take!(token)
+    else
+        rhovn = zeros(nw)
+    end
+
     close(f)
     close(token)
 
@@ -147,7 +158,7 @@ function readg(gfile)
 
     g = GEQDSKFile(gfile, nw,nh,r,z,rdim,zdim,rleft,zmid,nbbbs,rbbbs,zbbbs,limitr,rlim,zlim,
                    rcentr,bcentr,rmaxis,zmaxis,simag,sibry,psi,current,fpol,pres,ffprim,pprime,
-                   qpsi,psirz)
+                   qpsi,psirz,rhovn)
 
     return g
 end
