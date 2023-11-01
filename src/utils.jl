@@ -214,7 +214,7 @@ function x_points(
         append!(xzs, xz)
         append!(xpsins, xpsin)
 
-        println("found x point at ", xr, ", ", xz, " with psiN = ", xpsin)
+        # println("found x point at ", xr, ", ", xz, " with psiN = ", xpsin)
     end
 
     # Categorize the X-points; x-points on the primary or secondary separatrices
