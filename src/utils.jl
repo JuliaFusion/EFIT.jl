@@ -123,6 +123,8 @@ psin_tolerance:
     grid resolution isn't infinite).
     Also for determining whether additional X-points are on the secondary
     separatrix after it is identified.
+within_limiter_only:
+    Only look for X-points that are within the limiting surface
 """
 function x_points(
     g::GEQDSKFile;
@@ -130,6 +132,7 @@ function x_points(
     bpol_thresh_factor::Float64=20.0,
     up_factor::Int64=5,
     psin_tolerance::Float64=0.002,
+    within_limiter_only::Bool=true,
 )
     # Get out the basics
     r_eq = collect(g.r)
@@ -172,8 +175,10 @@ function x_points(
     bpol_thresh = minimum(bpol) * bpol_thresh_factor
     # These guys are all probably the closest grid cells to X-points
     prime_real_estate =
-        (bpol .< bpol_thresh) .& (d .< 0.0) .& (bpol .== local_minimum) .&
-        within_limiter
+        (bpol .< bpol_thresh) .& (d .< 0.0) .& (bpol .== local_minimum)
+    if within_limiter_only
+        prime_real_estate .&= within_limiter
+    end
     search_centers = findall(prime_real_estate)
 
     # Log found X-points so they can be sorted by psi_N to identify whether they are
