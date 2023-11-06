@@ -139,14 +139,18 @@ function readg(gfile)
         zlim = [0.0]
     end
 
+    for i ∈ 1:3
+        if !eof(f)
+            xdum = take!(token)
+        end
+    end
     if !eof(f)
-        xdum = take!(token)
-        xdum = take!(token)
-        xdum = take!(token)
         rhovn = read_array(token,nw)
-        xdum = take!(token)
     else
         rhovn = zeros(nw)
+    end
+    if !eof(f)
+        xdum = take!(token)
     end
 
     close(f)
