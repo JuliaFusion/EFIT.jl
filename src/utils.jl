@@ -1,6 +1,6 @@
 using Interpolations: Interpolations
 using PolygonOps: PolygonOps
-using OMAS: OMAS
+using IMASDD: IMASDD
 
 function triangularity(g::GEQDSKFile)
     Rmin, Rmax = extrema(filter(!iszero,g.rbbbs))
@@ -68,13 +68,13 @@ psi: polidal magnetic flux / T m^2
 """
 function fluxinfo(r::Vector, z::Vector, psi::Matrix)
     # Take some gradients
-    dpsidr, dpsidz = OMAS.gradient(r, z, psi)
+    dpsidr, dpsidz = IMASDD.gradient(r, z, psi)
     br = -dpsidz ./ r
     bz = dpsidr ./ r
     bpol2 = (br .^ 2) .+ (bz .^ 2)
     bpol = real.(sqrt.((br .^ 2) .+ (bz .^ 2)))
-    d2psidr2, d2psidrdz = OMAS.gradient(r, z, dpsidr)
-    d2psidzdr, d2psidz2 = OMAS.gradient(r, z, dpsidz)
+    d2psidr2, d2psidrdz = IMASDD.gradient(r, z, dpsidr)
+    d2psidzdr, d2psidz2 = IMASDD.gradient(r, z, dpsidz)
     d = d2psidr2 .* d2psidz2 .- d2psidrdz .^ 2
     return (br, bz, bpol, d)
 end
