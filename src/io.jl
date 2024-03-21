@@ -1,5 +1,6 @@
 mutable struct GEQDSKFile
     file::String                    # Source file
+    time::Float64                   # Time of the equilibrium reconstruction, in seconds
     nw::Int                         # Number of horizontal R grid points
     nh::Int                         # Number of vertical Z grid points
     r::AbstractRange{Float64}       # R grid points
@@ -75,6 +76,7 @@ function readg(gfile)
     s = split(desc)
 
     time = Meta.parse(s[end-3])
+    time /= 1000.0  # Assume it was written in ms and convert to s
     idum = Meta.parse(s[end-2])
     nw = Meta.parse(s[end-1])
     nh = Meta.parse(s[end])
@@ -160,7 +162,7 @@ function readg(gfile)
     z = range(zmid - 0.5*zdim, zmid + 0.5*zdim, length=nh)
     psi = range(simag, sibry, length=nw)
 
-    g = GEQDSKFile(gfile, nw,nh,r,z,rdim,zdim,rleft,zmid,nbbbs,rbbbs,zbbbs,limitr,rlim,zlim,
+    g = GEQDSKFile(gfile,time,nw,nh,r,z,rdim,zdim,rleft,zmid,nbbbs,rbbbs,zbbbs,limitr,rlim,zlim,
                    rcentr,bcentr,rmaxis,zmaxis,simag,sibry,psi,current,fpol,pres,ffprim,pprime,
                    qpsi,psirz,rhovn)
 
