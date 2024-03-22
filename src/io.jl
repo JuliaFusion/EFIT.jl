@@ -66,7 +66,7 @@ function read_array2d(t,n,m)
     return data'
 end
 
-function readg(gfile)
+function readg(gfile; set_time=nothing)
 
     isfile(gfile) || error("$(gfile) does not exist")
 
@@ -85,19 +85,26 @@ function readg(gfile)
         if time isa String
             rg2 = r"([[:digit:]]+|(?:[[:punct:]]|[[:blank:]])+)"
             try
-                time = parse(Int,collect(eachmatch(rg2, time))[1][1])
+                time = parse(Int,collect(eachmatch(rg2, time))[1][1]) / 1000.0
             catch e
-                println(
-                    time_warning,
-                    ", even after trying really hard with regex and everything. Time is ",
-                    time,
-                    ". ",
-                    omfit_advice,
-                )
+                if set_time == nothing
+                    println(
+                        time_warning,
+                        ", even after trying really hard with regex and everything. Time is ",
+                        time,
+                        ". ",
+                        omfit_advice,
+                    )
+                else
+                    time = set_time
+                end
             end
-            time /= 1000.0
         else
-            println(time_warning, ". Time is ", time, ". ", omfit_advice)
+            if set_time is nothing
+                println(time_warning, ". Time is ", time, ". ", omfit_advice)
+            else
+                time = set_time
+            end
         end
     end
 
