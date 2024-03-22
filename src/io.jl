@@ -76,7 +76,31 @@ function readg(gfile)
     s = split(desc)
 
     time = Meta.parse(s[end-3])
-    time /= 1000.0  # Assume it was written in ms and convert to s
+    time_warning = "Warning: EFIT.jl could not convert time from ms (assumed units) to s"
+    omfit_advice = "Options for proceeding include editing the header in your gEQDSK file or trying to use OMFIT:" *
+        "python: `OMFITgeqdsk(file).to_omas().save('ods.jl')`"
+    try
+        time /= 1000.0  # Assume it was written in ms and convert to s
+    catch e
+        if time isa String
+            rg2 = r"([[:digit:]]+|(?:[[:punct:]]|[[:blank:]])+)"
+            try
+                time = parse(Int,collect(eachmatch(rg2, time))[1][1])
+            catch e
+                println(
+                    time_warning,
+                    ", even after trying really hard with regex and everything. Time is ",
+                    time,
+                    ". ",
+                    omfit_advice,
+                )
+            end
+            time /= 1000.0
+        else
+            println(time_warning, ". Time is ", time, ". ", omfit_advice)
+        end
+    end
+
     idum = Meta.parse(s[end-2])
     nw = Meta.parse(s[end-1])
     nh = Meta.parse(s[end])
