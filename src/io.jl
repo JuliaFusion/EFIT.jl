@@ -66,14 +66,8 @@ function read_array2d(t,n,m)
     return data'
 end
 
-function readg(gfile; set_time=nothing)
-
-    isfile(gfile) || error("$(gfile) does not exist")
-
-    f = open(gfile)
-
-    desc = readline(f)
-    s = split(desc)
+function parse_gfile_header(headerline::String; set_time=nothing)
+    s = split(headerline)
 
     if !isnothing(set_time)
         time = set_time
@@ -109,6 +103,19 @@ function readg(gfile; set_time=nothing)
     idum = Meta.parse(s[end-2])
     nw = Meta.parse(s[end-1])
     nh = Meta.parse(s[end])
+    println("time = ", time)
+
+    return idum, time, nw, nh
+end
+
+function readg(gfile; set_time=nothing)
+
+    isfile(gfile) || error("$(gfile) does not exist")
+
+    f = open(gfile)
+
+    desc = readline(f)
+    idum, time, nw, nh = parse_gfile_header(desc, set_time=set_time)
 
     token = file_numbers(f)
 

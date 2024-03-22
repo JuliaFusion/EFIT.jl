@@ -1,5 +1,6 @@
 using Test
 using EFIT
+import EFIT
 
 g = readg(EFIT.test_gfile)
 g2 = readg(EFIT.test_gfile2)
@@ -57,4 +58,37 @@ lt, ut = triangularity(g)
     @test xpsins[2] > (1 + psin_tolerance)
     @test (xrs[2] > 1.2) & (xrs[2] < 1.33)
     @test (xzs[2] > 1.04) & (xzs[2] < 1.17)
+end
+
+@testset "parse header" begin
+    headers = [
+        "EFITD    00/00/2008    #002296  0200ms Convert   0 257 513",
+    ]
+    times = [
+        0.2,
+    ]
+    expect_exception = [
+        true,
+    ]
+    the_set_time = 2000
+    for set_time in [the_set_time, nothing]
+        for i in 1:length(headers)
+            try
+                idum, time, nw, nh = EFIT.parse_gfile_header(headers[i]; set_time=set_time)
+            catch
+                if expect_exception[i]
+                    println("got the expected exception", i)
+                else
+                    raise
+                end
+            else
+                println("time = ", time, ", times[i] = ", times[i])
+                if isnothing(set_time)
+                    @test time == the_set_time / 1000.0
+                else
+                    @test time == times[i]
+                end
+            end
+        end
+    end
 end
