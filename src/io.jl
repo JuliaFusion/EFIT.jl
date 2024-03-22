@@ -75,35 +75,33 @@ function readg(gfile; set_time=nothing)
     desc = readline(f)
     s = split(desc)
 
-    time = Meta.parse(s[end-3])
-    time_warning = "Warning: EFIT.jl could not convert time from ms (assumed units) to s"
-    omfit_advice = "Options for proceeding include editing the header in your gEQDSK file or trying to use OMFIT:" *
-        "python: `OMFITgeqdsk(file).to_omas().save('ods.jl')`"
-    try
-        time /= 1000.0  # Assume it was written in ms and convert to s
-    catch e
-        if time isa String
-            rg2 = r"([[:digit:]]+|(?:[[:punct:]]|[[:blank:]])+)"
-            try
-                time = parse(Int,collect(eachmatch(rg2, time))[1][1]) / 1000.0
-            catch e
-                if set_time == nothing
-                    println(
+    if !isnothing(set_time)
+        time = set_time
+    else
+        time = Meta.parse(s[end-3])
+        time_warning = "EFIT.jl could not convert time from ms (assumed units) to s"
+        omfit_advice = "Options for proceeding include:\n" *
+                       "i)    Editing the header in your gEQDSK file.\n" *
+                       "ii)   Trying to use OMFIT: python: `OMFITgeqdsk(file).to_omas().save('ods.jl')`\n" *
+                       "iii)  Set the time manually with the `set_time` keyword argument.\n"
+        try
+            time /= 1000.0  # Assume it was written in ms and convert to s
+        catch e
+            if time isa String
+                rg2 = r"([[:digit:]]+|(?:[[:punct:]]|[[:blank:]])+)"
+                try
+                    time = parse(Int, collect(eachmatch(rg2, time))[1][1]) / 1000.0
+                catch e
+                    error(
                         time_warning,
-                        ", even after trying really hard with regex and everything. Time is ",
+                        ", even after trying really hard with regex and everything.\nTime is ",
                         time,
-                        ". ",
-                        omfit_advice,
+                        ". \n",
+                        omfit_advice
                     )
-                else
-                    time = set_time
                 end
-            end
-        else
-            if set_time is nothing
-                println(time_warning, ". Time is ", time, ". ", omfit_advice)
             else
-                time = set_time
+                error(time_warning, ".\nTime is parsed as ", time," of type ", typeof(time), ". ", omfit_advice)
             end
         end
     end
