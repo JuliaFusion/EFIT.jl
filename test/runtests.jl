@@ -62,32 +62,34 @@ end
 
 @testset "parse header" begin
     headers = [
-        "EFITD    00/00/2008    #002296  0200ms Convert   0 257 513",
+        "   EFITD    00/00/2008    #002296  0200ms Convert   0 257 513",
+        "   EFITD   11/23/2020    #184833  3600             3  65  65",
     ]
     times = [
         0.2,
+        3.6,
     ]
     expect_exception = [
         true,
+        false,
     ]
-    the_set_time = 2000
+    the_set_time = 0.2
     for set_time in [the_set_time, nothing]
-        for i in 1:length(headers)
+        for i in eachindex(headers)
             try
                 idum, time, nw, nh = EFIT.parse_gfile_header(headers[i]; set_time=set_time)
-            catch
-                if expect_exception[i]
-                    println("got the expected exception", i)
-                else
-                    raise
-                end
-            else
-                println("time = ", time, ", times[i] = ", times[i])
-                if isnothing(set_time)
-                    @test time == the_set_time / 1000.0
+                if !isnothing(set_time)
+                    @test time == the_set_time
                 else
                     @test time == times[i]
                 end
+            catch
+                if expect_exception[i]
+                    println("Got the expected exception")
+                else
+                    println("Got the unexpected exception")
+                end
+                @test expect_exception[i]
             end
         end
     end

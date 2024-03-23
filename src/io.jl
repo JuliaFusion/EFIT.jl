@@ -103,7 +103,6 @@ function parse_gfile_header(headerline::String; set_time=nothing)
     idum = Meta.parse(s[end-2])
     nw = Meta.parse(s[end-1])
     nh = Meta.parse(s[end])
-    println("time = ", time)
 
     return idum, time, nw, nh
 end
