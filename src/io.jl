@@ -66,20 +66,55 @@ function read_array2d(t,n,m)
     return data'
 end
 
-function readg(gfile)
+function parse_gfile_header(headerline::String; set_time=nothing)
+    s = split(headerline)
+
+    if !isnothing(set_time)
+        time = set_time
+    else
+        time = Meta.parse(s[end-3])
+        time_warning = "EFIT.jl could not convert time from ms (assumed units) to s"
+        omfit_advice = "Options for proceeding include:\n" *
+                       "i)    Editing the header in your gEQDSK file.\n" *
+                       "ii)   Trying to use OMFIT: python: `OMFITgeqdsk(file).to_omas().save('ods.jl')`\n" *
+                       "iii)  Set the time manually with the `set_time` keyword argument.\n"
+        try
+            time /= 1000.0  # Assume it was written in ms and convert to s
+        catch e
+            if time isa String
+                rg2 = r"([[:digit:]]+|(?:[[:punct:]]|[[:blank:]])+)"
+                try
+                    time = parse(Int, collect(eachmatch(rg2, time))[1][1]) / 1000.0
+                catch e
+                    error(
+                        time_warning,
+                        ", even after trying really hard with regex and everything.\nTime is ",
+                        time,
+                        ". \n",
+                        omfit_advice
+                    )
+                end
+            else
+                error(time_warning, ".\nTime is parsed as ", time," of type ", typeof(time), ". ", omfit_advice)
+            end
+        end
+    end
+
+    idum = Meta.parse(s[end-2])
+    nw = Meta.parse(s[end-1])
+    nh = Meta.parse(s[end])
+
+    return idum, time, nw, nh
+end
+
+function readg(gfile; set_time=nothing)
 
     isfile(gfile) || error("$(gfile) does not exist")
 
     f = open(gfile)
 
     desc = readline(f)
-    s = split(desc)
-
-    time = Meta.parse(s[end-3])
-    time /= 1000.0  # Assume it was written in ms and convert to s
-    idum = Meta.parse(s[end-2])
-    nw = Meta.parse(s[end-1])
-    nh = Meta.parse(s[end])
+    idum, time, nw, nh = parse_gfile_header(desc, set_time=set_time)
 
     token = file_numbers(f)
 
