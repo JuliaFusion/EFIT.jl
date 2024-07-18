@@ -1,7 +1,7 @@
 name = "EFIT"
 uuid = "cda752c5-6b03-55a3-9e33-132a441b0c17"
 author = ["Luke Stagner <stagnerl@fusion.gat.com>"]
-version = "0.2.0"
+version = "1.0.0"
 
 [deps]
 IMASDD = "06b86afa-9f21-11ec-2ef8-e51b8960cfc5"

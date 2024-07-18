@@ -53,7 +53,15 @@ end
 function read_array(t,n)
     data = zeros(n)
     for i=1:n
-        data[i] = take!(t)
+        try
+            data[i] = take!(t)
+        catch e
+            if isa(e, InvalidStateException)
+                # InvalidStateException when Channel is closed
+            else
+                rethrow(e)
+            end
+        end
     end
     return data
 end
@@ -61,7 +69,15 @@ end
 function read_array2d(t,n,m)
     data = zeros(n,m)
     for i=1:n, j=1:m
-        data[i,j] = take!(t)
+        try
+            data[i,j] = take!(t)
+        catch e
+            if isa(e, InvalidStateException)
+                # InvalidStateException when Channel is closed
+            else
+                rethrow(e)
+            end
+        end
     end
     return data'
 end
@@ -114,7 +130,7 @@ function readg(gfile; set_time=nothing)
     f = open(gfile)
 
     desc = readline(f)
-    idum, time, nw, nh = parse_gfile_header(desc, set_time=set_time)
+    idum, time, nw, nh = parse_gfile_header(desc; set_time)
 
     token = file_numbers(f)
 
