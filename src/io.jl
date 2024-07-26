@@ -192,18 +192,28 @@ function readg(gfile; set_time=nothing)
         zlim = [0.0]
     end
 
-    for i ∈ 1:3
+    local rhovn
+    try
+        for i ∈ 1:3
+            if !eof(f)
+                xdum = take!(token)
+            end
+        end
+        if !eof(f)
+            rhovn = read_array(token,nw)
+        else
+            rhovn = zeros(nw)
+        end
         if !eof(f)
             xdum = take!(token)
         end
-    end
-    if !eof(f)
-        rhovn = read_array(token,nw)
-    else
-        rhovn = zeros(nw)
-    end
-    if !eof(f)
-        xdum = take!(token)
+    catch e
+        if isa(e, InvalidStateException)
+            # InvalidStateException when Channel is closed
+            rhovn = zeros(nw)
+        else
+            rethrow(e)
+        end
     end
 
     close(f)
