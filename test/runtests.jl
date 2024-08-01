@@ -1,6 +1,7 @@
 using Test
 using EFIT
 import EFIT
+import IMASdd
 
 g = readg(EFIT.test_gfile)
 g2 = readg(EFIT.test_gfile2)
@@ -93,4 +94,11 @@ end
             end
         end
     end
+end
+
+@testset "imas" begin
+    dd = IMASdd.dd()
+    eqt = resize!(dd.equilibrium.time_slice, 1)[1]
+    EFIT.geqdsk2imas!(g, eqt; wall=dd.wall, add_derived=true)
+    @test length(eqt.profiles_2d[1].grid.dim1) > 1
 end

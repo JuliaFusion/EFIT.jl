@@ -1,3 +1,6 @@
+import IMASdd
+import CoordinateConventions
+
 mutable struct GEQDSKFile
     file::String                    # Source file
     time::Float64                   # Time of the equilibrium reconstruction, in seconds
@@ -228,4 +231,141 @@ function readg(gfile; set_time=nothing)
                    qpsi,psirz,rhovn)
 
     return g
+end
+
+
+# @ddtime(eq.vacuum_toroidal_field.b0 = g.bcentr)
+# eq.vacuum_toroidal_field.r0 = g.rcentr
+
+"""
+    function geqdsk2imas!(g::GEQDSKFile, eqt::IMASdd.equilibrium__time_slice)
+
+Writes equilibrium data from a GEQDSK file to IMAS equilibrium IDS in a specific
+time slice. Can optionally include writing wall data to the wall IDS.
+"""
+function geqdsk2imas!(
+    g::GEQDSKFile, eqt::IMASdd.equilibrium__time_slice{Float64};
+    wall=nothing,
+    geqdsk_cocos::Int=1,
+    dd_cocos::Int=11,
+    add_derived::Bool=false,
+)
+    tc = CoordinateConventions.transform_cocos(geqdsk_cocos, dd_cocos)
+
+    # Global and boundary
+    gq = eqt.global_quantities
+    gq.magnetic_axis.r = g.rmaxis * tc["R"]
+    gq.magnetic_axis.z = g.zmaxis * tc["Z"]
+    gq.ip = g.current * tc["I"]
+    gq.psi_axis = g.simag * tc["PSI"]
+    gq.psi_boundary = g.sibry * tc["PSI"]
+    eqt.boundary.geometric_axis.r = g.rcentr * tc["R"]
+    eqt.boundary.geometric_axis.z = g.zmid * tc["Z"]
+    eqt.boundary.outline.r = g.rbbbs .* tc["R"]
+    eqt.boundary.outline.z = g.zbbbs .* tc["Z"]
+
+    # 1D profiles
+    p1 = eqt.profiles_1d
+    p1.psi = g.psi .* tc["PSI"]
+    p1.q = g.qpsi .* tc["Q"]
+    p1.pressure = g.pres .* tc["P"]
+    p1.dpressure_dpsi = g.pprime .* tc["PPRIME"]
+    p1.f = g.fpol .* tc["F"]
+    p1.f_df_dpsi = g.ffprim .* tc["F_FPRIME"]
+    if hasproperty(g, :rhovn)
+        p1.rho_tor_norm = g.rhovn
+    end
+
+    # 2D flux map
+    p2 = resize!(eqt.profiles_2d, 1)[1]
+    p2.grid_type.index = 1
+    p2.grid_type.name = "R-Z grid for flux map"
+    p2.grid_type.description = (
+        "A rectangular grid of points in R,Z on which poloidal " *
+        "magnetic flux psi is defined. The grid's dim1 is R, dim2 is Z."
+    )
+    p2.grid.dim1 = collect(g.r) .* tc["R"]
+    p2.grid.dim2 = collect(g.z) .* tc["Z"]
+    p2.psi = g.psirz .* tc["PSI"]
+
+    # Wall
+    if wall !== nothing
+        geqdsk2wall!(g, wall; geqdsk_cocos=geqdsk_cocos, dd_cocos=dd_cocos)
+    end
+
+    # Derived
+    if add_derived
+        derived_g2imas!(g, eqt; geqdsk_cocos=geqdsk_cocos, dd_cocos=dd_cocos)
+    end
+end
+
+"""
+    function derived_g2imas!(g::GEQDSKFile, eqt::IMASdd.equilibrium__time_slice)
+
+Does simple calculations related to the flux map and stores results in IMAS
+"""
+function derived_g2imas!(
+    g::GEQDSKFile,
+    eqt::IMASdd.equilibrium__time_slice;
+    geqdsk_cocos::Int=1,
+    dd_cocos::Int=11,
+)
+    tc = CoordinateConventions.transform_cocos(geqdsk_cocos, dd_cocos)
+
+    # X-points
+    xrs, xzs, xpsins, xseps = x_points(g; within_limiter_only=false)
+    xrs .*= tc["R"]
+    xzs .*= tc["Z"]
+    if length(xrs) > 0
+        bx = eqt.boundary.x_point
+        resize!(bx, length(xrs))
+        for i ∈ eachindex(xrs)
+            bx[i].r = xrs[i]
+            bx[i].z = xzs[i]
+        end
+        nprim = sum(xseps .== 1)
+        if nprim > 0
+            bsx = eqt.boundary_separatrix.x_point
+            resize!(bsx, nprim)
+            xrprim = xrs[xseps.==1]
+            xzprim = xzs[xseps.==1]
+            for i ∈ nprim
+                bsx[i].r = xrprim[i]
+                bsx[i].z = xzprim[i]
+            end
+        end
+        nsec = sum(xseps .== 2)
+        if nsec > 0
+            bssx = eqt.boundary_secondary_separatrix.x_point
+            resize!(bssx, nsec)
+            xrsec = xrs[xseps.==2]
+            xzsec = xzs[xseps.==2]
+            for i ∈ nsec
+                bssx[i].r = xrsec[i]
+                bssx[i].z = xzsec[i]
+            end
+        end
+    end
+end
+
+"""
+    function geqdsk2wall!(g::GEQDSKFile, wall::IMASdd.wall)
+
+Writes wall data from GEQDSK to the wall IDS in IMAS.
+"""
+function geqdsk2wall!(
+    g::GEQDSKFile,
+    wall::IMASdd.wall;
+    geqdsk_cocos::Int=1,
+    dd_cocos::Int=11,
+)
+    tc = CoordinateConventions.transform_cocos(geqdsk_cocos, dd_cocos)
+    resize!(wall.description_2d, 1)
+    limiter = wall.description_2d[1].limiter
+    limiter.type.name = "first wall"
+    limiter.type.index = 0
+    limiter.type.description = "first wall"
+    resize!(limiter.unit, 1)
+    limiter.unit[1].outline.r = g.rlim .* tc["R"]
+    limiter.unit[1].outline.z = g.zlim .* tc["Z"]
 end
