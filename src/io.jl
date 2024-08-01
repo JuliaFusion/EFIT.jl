@@ -233,9 +233,41 @@ function readg(gfile; set_time=nothing)
     return g
 end
 
+function geqdsk2imas!(
+    g::GEQDSKFile,
+    eq::IMASdd.equilibrium,
+    time_index::Int;
+    wall=nothing,
+    geqdsk_cocos::Int=1,
+    dd_cocos::Int=11,
+    add_derived::Bool=false,
+)
+    # Make sure top level stuff is defined
+    if ismissing(eq, :time)
+        eq.time = Array{Float64}(undef, time_index)
+    end
+    if time_index > length(eq.time)
+        resize!(eq.gime, time_index)
+    end
+    if ismissing(eq.vacuum_toroidal_field, :b0)
+        eq.vacuum_toroidal_field.b0 = Array{Float64}(undef, time_index)
+    end
+    if time_index > length(eq.vacuum_toroidal_field.b0)
+        resize!(eq.vacuum_toroidal_field.b0, time_index)
+    end
 
-# @ddtime(eq.vacuum_toroidal_field.b0 = g.bcentr)
-# eq.vacuum_toroidal_field.r0 = g.rcentr
+    # Write top level data
+    eq.time[time_index] = g.time
+    eq.vacuum_toroidal_field.b0[time_index] = g.bcentr
+    eq.vacuum_toroidal_field.r0 = g.rcentr
+
+    # Handle time slice data
+    if time_index > length(eq.time_slice)
+        resize!(eq.time_slice, time_index)
+    end
+    eqt = eq.time_slice[time_index]
+    geqdsk2imas!(g, eqt, wall=wall, geqdsk_cocos=geqdsk_cocos, dd_cocos=dd_cocos, add_derived=add_derived)
+end
 
 """
     function geqdsk2imas!(g::GEQDSKFile, eqt::IMASdd.equilibrium__time_slice)
@@ -244,7 +276,8 @@ Writes equilibrium data from a GEQDSK file to IMAS equilibrium IDS in a specific
 time slice. Can optionally include writing wall data to the wall IDS.
 """
 function geqdsk2imas!(
-    g::GEQDSKFile, eqt::IMASdd.equilibrium__time_slice{Float64};
+    g::GEQDSKFile,
+    eqt::IMASdd.equilibrium__time_slice{Float64};
     wall=nothing,
     geqdsk_cocos::Int=1,
     dd_cocos::Int=11,

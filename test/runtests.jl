@@ -101,4 +101,9 @@ end
     eqt = resize!(dd.equilibrium.time_slice, 1)[1]
     EFIT.geqdsk2imas!(g, eqt; wall=dd.wall, add_derived=true)
     @test length(eqt.profiles_2d[1].grid.dim1) > 1
+    idx = 2
+    EFIT.geqdsk2imas!(g, dd.equilibrium, idx, add_derived=true)
+    eqt2 = dd.equilibrium.time_slice[idx]
+    @test length(eqt2.profiles_2d[1].grid.dim1) > 1
+    @test abs(dd.equilibrium.vacuum_toroidal_field.b0[idx]) > 0.0
 end
