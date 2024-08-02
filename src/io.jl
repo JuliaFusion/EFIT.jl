@@ -242,6 +242,9 @@ function geqdsk2imas!(
     dd_cocos::Int=11,
     add_derived::Bool=false,
 )
+    if ismissing(dd.dataset_description.data_entry, :pulse)
+        dd.dataset_description.data_entry.pulse = parse(Int, split(split(gs[1].file, ".")[end-1], "g")[2])
+    end
     geqdsk2imas!(gs, dd.equilibrium; wall=dd.wall, geqdsk_cocos=geqdsk_cocos, dd_cocos=dd_cocos, add_derived=add_derived)
 end
 
@@ -261,9 +264,8 @@ function geqdsk2imas!(
         resize!(eq.time_slice, nt)
     end
     for it in 1:nt
-        eqt = eq.time_slice[it]
         g = gs[it]
-        geqdsk2imas!(g, eqt, geqdsk_cocos=geqdsk_cocos, dd_cocos=dd_cocos, add_derived=add_derived)
+        geqdsk2imas!(g, eq, it; geqdsk_cocos=geqdsk_cocos, dd_cocos=dd_cocos, add_derived=add_derived)
     end
 end
 
@@ -275,6 +277,9 @@ function geqdsk2imas!(
     dd_cocos::Int=11,
     add_derived::Bool=false,
 )
+    if ismissing(dd.dataset_description.data_entry, :pulse)
+        dd.dataset_description.data_entry.pulse = parse(Int, split(split(g.file, ".")[end-1], "g")[2])
+    end
     geqdsk2imas!(g, dd.equilibrium, time_index, wall=dd.wall, geqdsk_cocos=geqdsk_cocos, dd_cocos=dd_cocos, add_derived=add_derived)
 end
 
@@ -292,7 +297,7 @@ function geqdsk2imas!(
         eq.time = Array{Float64}(undef, time_index)
     end
     if time_index > length(eq.time)
-        resize!(eq.gime, time_index)
+        resize!(eq.time, time_index)
     end
     if ismissing(eq.vacuum_toroidal_field, :b0)
         eq.vacuum_toroidal_field.b0 = Array{Float64}(undef, time_index)
@@ -329,6 +334,8 @@ function geqdsk2imas!(
     add_derived::Bool=false,
 )
     tc = CoordinateConventions.transform_cocos(geqdsk_cocos, dd_cocos)
+
+    eqt.time = g.time
 
     # Global and boundary
     gq = eqt.global_quantities
@@ -446,4 +453,86 @@ function geqdsk2wall!(
     resize!(limiter.unit, 1)
     limiter.unit[1].outline.r = g.rlim .* tc["R"]
     limiter.unit[1].outline.z = g.zlim .* tc["Z"]
+end
+
+
+function imas2geqdsk(
+    dd::IMASdd.dd;
+    geqdsk_cocos::Int=1,
+    dd_cocos::Int=11,
+)::Vector{GEQDSKFile}
+    nt = length(dd.equilibrium.time_slice)
+    return [imas2geqdsk(dd, time_index, geqdsk_cocos=geqdsk_cocos, dd_cocos=dd_cocos) for time_index in 1:nt]
+end
+
+function imas2geqdsk(
+    dd::IMASdd.dd,
+    time_index::Int;
+    geqdsk_cocos::Int=1,
+    dd_cocos::Int=11,
+)::GEQDSKFile
+    tc = CoordinateConventions.transform_cocos(geqdsk_cocos, dd_cocos)
+
+    if !ismissing(dd.dataset_description.data_entry, :pulse)
+        shot = dd.dataset_description.data_entry.pulse
+    else
+        shot = 0
+    end
+
+    eqt = dd.equilibrium.time_slice[time_index]
+    limiter = dd.wall.description_2d[1].limiter
+    rlim = limiter.unit[1].outline.r ./ tc["R"]
+    zlim = limiter.unit[1].outline.z ./ tc["Z"]
+    limitr = length(rlim)
+
+    # Global and boundary
+    gq = eqt.global_quantities
+    rmaxis = gq.magnetic_axis.r / tc["R"]
+    zmaxis = gq.magnetic_axis.z / tc["Z"]
+    current = gq.ip / tc["I"]
+    simag = gq.psi_axis / tc["PSI"]
+    sibry = gq.psi_boundary / tc["PSI"]
+    rcentr = eqt.boundary.geometric_axis.r / tc["R"]
+    zmid = eqt.boundary.geometric_axis.z / tc["Z"]
+    rbbbs = eqt.boundary.outline.r ./ tc["R"]
+    zbbbs = eqt.boundary.outline.z ./ tc["Z"]
+    nbbbs = length(rbbbs)
+
+    # 1D profiles
+    p1 = eqt.profiles_1d
+    psi = p1.psi ./ tc["PSI"]
+    qpsi = p1.q ./ tc["Q"]
+    pres = p1.pressure ./ tc["P"]
+    pprime = p1.dpressure_dpsi ./ tc["PPRIME"]
+    fpol = p1.f ./ tc["F"]
+    ffprim = p1.f_df_dpsi ./ tc["F_FPRIME"]
+    rhovn = p1.rho_tor_norm
+
+    # 2D flux map
+    p2 = eqt.profiles_2d[1]
+    r = p2.grid.dim1 ./ tc["R"]
+    z = p2.grid.dim2 ./ tc["Z"]
+    psirz = p2.psi ./ tc["PSI"]
+
+    bcentr = dd.equilibrium.vacuum_toroidal_field.b0[time_index]
+    time = eqt.time
+    println("eqt.time = $(eqt.time), time out = $time")
+    rleft = minimum(r)
+    rdim = maximum(r) - rleft
+    zdim = maximum(z) - minimum(z)
+    nw = length(r)
+    nh = length(z)
+    itime = Int(round(time * 1000))
+    gfile = "g" * lpad(shot, 6, '0') * "." * lpad(itime, 5, '0')
+    println("shot $shot, gfile = $gfile")
+
+    r = range(rleft, rleft + rdim, length=nw)
+    z = range(zmid - 0.5*zdim, zmid + 0.5*zdim, length=nh)
+    psi = range(simag, sibry, length=nw)
+
+    return GEQDSKFile(
+        gfile,time,nw,nh,r,z,rdim,zdim,rleft,zmid,nbbbs,rbbbs,zbbbs,limitr,rlim,zlim,
+        rcentr,bcentr,rmaxis,zmaxis,simag,sibry,psi,current,fpol,pres,ffprim,pprime,
+        qpsi,psirz,rhovn,
+    )
 end
