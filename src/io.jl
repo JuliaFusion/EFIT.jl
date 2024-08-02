@@ -235,6 +235,38 @@ function readg(gfile; set_time=nothing)
     return g
 end
 
+"""
+    function geqdsk2imas!(
+        gs::Vector{GEQDSKFile},
+        dd::IMASdd.dd;
+        geqdsk_cocos::Int=0,
+        dd_cocos::Int=11,
+        cocos_clockwise_phi::Bool=false,
+        add_derived::Bool=false,
+    )
+
+Utility for writing equilibrium data from GEQDSKFiles to IMAS schema.
+
+Variations of this function accept single GEQDSKFile instances or vectors of these.
+Also, a complete data dictionary can be provided, or a reference to the equilibrium IDS,
+(both of these needing instruction on which time slice to write to) or to a single
+equilibrium.time\\_slice. If the top level DD isn't referenced, a reference to the
+wall IDS can be passed in separately to allow writing wall data.
+The COCOS of the incoming geqdsk files can be spefificed, or it can be automatically
+detected by setting geqdsk\\_cocos=0 (the default). If multiple COCOS are possible,
+the first one in the list will be chosen, which usually means 3 intead of 13, for example.
+To narrow down the choice of COCOS, it is necessary to specify the direction of toroidal
+angle using cocos\\_clockwise\\_phi, which defaults to false (meaning phi is CCW).
+Lastly, limited derived data can be added by setting add\\_derived=true. Only calculations
+that are already within EFIT.jl will be used to contribute to this extension.
+
+    gs: Vector of GEQDSKFile instances
+    dd: Top level IMAS data dictionary
+    geqdsk_cocos: coordinate convention indentifier of the incoming GEQDSK set. 0 to auto detect.
+    dd_cocos: coordinate convention identifier of the DD. Should normally be left at 11.
+    cocos_clockwise_phi: hint for deciding COCOS, because GEQDSK probably doesn't constrain this.
+    add_derived: switch to use functions within EFIT.jl to extend equilibrium data
+"""
 function geqdsk2imas!(
     gs::Vector{GEQDSKFile},
     dd::IMASdd.dd;
@@ -253,6 +285,27 @@ function geqdsk2imas!(
     )
 end
 
+"""
+    function geqdsk2imas!(
+        gs::Vector{GEQDSKFile},
+        eq::IMASdd.equilibrium;
+        wall=nothing,
+        geqdsk_cocos::Int=0,
+        dd_cocos::Int=11,
+        cocos_clockwise_phi::Bool=false,
+        add_derived::Bool=false,
+    )
+
+Utility for writing equilibrium data from GEQDSKFile instances to IMAS equilibrium IDS
+
+    gs: Vector of GEQDSKFile instances
+    eq: Reference to the equilibrium IDS
+    wall: Reference to the wall IDS
+    geqdsk_cocos: coordinate convention indentifier of the incoming GEQDSK set. 0 to auto detect.
+    dd_cocos: coordinate convention identifier of the DD. Should normally be left at 11.
+    cocos_clockwise_phi: hint for deciding COCOS, because GEQDSK probably doesn't constrain this.
+    add_derived: switch to use functions within EFIT.jl to extend equilibrium data
+"""
 function geqdsk2imas!(
     gs::Vector{GEQDSKFile},
     eq::IMASdd.equilibrium;
@@ -279,6 +332,27 @@ function geqdsk2imas!(
     end
 end
 
+"""
+    function geqdsk2imas!(
+        g::GEQDSKFile,
+        dd::IMASdd.dd,
+        time_index::Int;
+        geqdsk_cocos::Int=0,
+        dd_cocos::Int=11,
+        cocos_clockwise_phi::Bool=false,
+        add_derived::Bool=false,
+    )
+
+Utility for writing equilibrium data from a GEQDSKFile to IMAS DD.
+
+    g: GEQDSKFile instance
+    dd: IMAS data dictionary
+    time_index: index of the destination for equilibrium data within equilibrium.time_slice
+    geqdsk_cocos: coordinate convention indentifier of the incoming GEQDSK set. 0 to auto detect.
+    dd_cocos: coordinate convention identifier of the DD. Should normally be left at 11.
+    cocos_clockwise_phi: hint for deciding COCOS, because GEQDSK probably doesn't constrain this.
+    add_derived: switch to use functions within EFIT.jl to extend equilibrium data
+"""
 function geqdsk2imas!(
     g::GEQDSKFile,
     dd::IMASdd.dd,
@@ -298,6 +372,29 @@ function geqdsk2imas!(
     )
 end
 
+"""
+    function geqdsk2imas!(
+        g::GEQDSKFile,
+        eq::IMASdd.equilibrium,
+        time_index::Int;
+        wall=nothing,
+        geqdsk_cocos::Int=0,
+        dd_cocos::Int=11,
+        cocos_clockwise_phi::Bool=false,
+        add_derived::Bool=false,
+    )
+
+Utility for writing equilibrium data from a GEQDSKFile to IMAS equilibrium IDS
+
+    g: GEQDSKFile instance
+    eq: Reference to equilibrium IDS
+    time_index: index of the destination for equilibrium data within equilibrium.time_slice
+    wall: Optional reference to wall IDS
+    geqdsk_cocos: coordinate convention indentifier of the incoming GEQDSK set. 0 to auto detect.
+    dd_cocos: coordinate convention identifier of the DD. Should normally be left at 11.
+    cocos_clockwise_phi: hint for deciding COCOS, because GEQDSK probably doesn't constrain this.
+    add_derived: switch to use functions within EFIT.jl to extend equilibrium data
+"""
 function geqdsk2imas!(
     g::GEQDSKFile,
     eq::IMASdd.equilibrium,
@@ -348,10 +445,26 @@ function geqdsk2imas!(
 end
 
 """
-    function geqdsk2imas!(g::GEQDSKFile, eqt::IMASdd.equilibrium__time_slice)
+    function geqdsk2imas!(
+        g::GEQDSKFile,
+        eqt::IMASdd.equilibrium__time_slice{Float64};
+        wall=nothing,
+        geqdsk_cocos::Int=0,
+        dd_cocos::Int=11,
+        cocos_clockwise_phi::Bool=false,
+        add_derived::Bool=false,
+    )
 
 Writes equilibrium data from a GEQDSK file to IMAS equilibrium IDS in a specific
 time slice. Can optionally include writing wall data to the wall IDS.
+
+    g: GEQDSKFile instance
+    eqt: A specific time slice within dd.equilibrium.time_slice
+    wall: Optional reference to wall IDS
+    geqdsk_cocos: coordinate convention indentifier of the incoming GEQDSK set. 0 to auto detect.
+    dd_cocos: coordinate convention identifier of the DD. Should normally be left at 11.
+    cocos_clockwise_phi: hint for deciding COCOS, because GEQDSK probably doesn't constrain this.
+    add_derived: switch to use functions within EFIT.jl to extend equilibrium data
 """
 function geqdsk2imas!(
     g::GEQDSKFile,
@@ -420,9 +533,21 @@ function geqdsk2imas!(
 end
 
 """
-    function derived_g2imas!(g::GEQDSKFile, eqt::IMASdd.equilibrium__time_slice)
+    function derived_g2imas!(
+        g::GEQDSKFile,
+        eqt::IMASdd.equilibrium__time_slice;
+        geqdsk_cocos::Int=0,
+        dd_cocos::Int=11,
+        cocos_clockwise_phi::Bool=false,
+    )
 
 Does simple calculations related to the flux map and stores results in IMAS
+
+    g: GEQDSKFile instance
+    eqt: A specific time slice within dd.equilibrium.time_slice
+    geqdsk_cocos: coordinate convention indentifier of the incoming GEQDSK set. 0 to auto detect.
+    dd_cocos: coordinate convention identifier of the DD. Should normally be left at 11.
+    cocos_clockwise_phi: hint for deciding COCOS, because GEQDSK probably doesn't constrain this.
 """
 function derived_g2imas!(
     g::GEQDSKFile,
@@ -476,9 +601,21 @@ function derived_g2imas!(
 end
 
 """
-    function geqdsk2wall!(g::GEQDSKFile, wall::IMASdd.wall)
+    function geqdsk2wall!(
+        g::GEQDSKFile,
+        wall::IMASdd.wall;
+        geqdsk_cocos::Int=0,
+        dd_cocos::Int=11,
+        cocos_clockwise_phi::Bool=false,
+    )
 
 Writes wall data from GEQDSK to the wall IDS in IMAS.
+
+    g: GEQDSKFile instance
+    wall: Reference to the wall IDS in IMAS DD
+    geqdsk_cocos: coordinate convention indentifier of the incoming GEQDSK set. 0 to auto detect.
+    dd_cocos: coordinate convention identifier of the DD. Should normally be left at 11.
+    cocos_clockwise_phi: hint for deciding COCOS, because GEQDSK probably doesn't constrain this.
 """
 function geqdsk2wall!(
     g::GEQDSKFile,
@@ -504,7 +641,19 @@ function geqdsk2wall!(
     limiter.unit[1].outline.z = g.zlim .* tc["Z"]
 end
 
+"""
+    function imas2geqdsk(
+        dd::IMASdd.dd;
+        geqdsk_cocos::Int=1,
+        dd_cocos::Int=11,
+    )::Vector{GEQDSKFile}
 
+Utility for outputting IMAS equilibrium data to a vector of GEQDSKFile instances.
+
+    dd: IMAS data dictionary instance containing equilibrium data
+    geqdsk_cocos: coordinate convention indentifier of the GEQDSKs to be written
+    dd_cocos: coordinate convention identifier of the DD. Should normally be left at 11.
+"""
 function imas2geqdsk(
     dd::IMASdd.dd;
     geqdsk_cocos::Int=1,
@@ -514,6 +663,15 @@ function imas2geqdsk(
     return [imas2geqdsk(dd, time_index, geqdsk_cocos=geqdsk_cocos, dd_cocos=dd_cocos) for time_index in 1:nt]
 end
 
+"""
+
+Utility for outputting IMAS equilibrium data from a single time slice to a GEQDSKFile
+
+    dd: IMAS data dictionary instance containing equilibrium data
+    time_index: index of the time slice to output
+    geqdsk_cocos: coordinate convention indentifier of the GEQDSKs to be written
+    dd_cocos: coordinate convention identifier of the DD. Should normally be left at 11.
+"""
 function imas2geqdsk(
     dd::IMASdd.dd,
     time_index::Int;
