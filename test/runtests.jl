@@ -2,6 +2,7 @@ using Test
 using EFIT
 import EFIT
 import IMASdd
+import CoordinateConventions
 
 g = readg(EFIT.test_gfile)
 g2 = readg(EFIT.test_gfile2)
@@ -141,25 +142,30 @@ function gcompare(g1::GEQDSKFile, g2::GEQDSKFile; note=nothing, verbose::Bool=fa
 end
 
 @testset "imas" begin
+    cocos_clockwise_phi = false  # Assumed
     gs = [g2, g]
+    gcocos = [CoordinateConventions.identify_cocos(
+        sign(gs[ig].bcentr), sign(gs[ig].current), sign(gs[ig].qpsi[1]), sign(gs[ig].psi[end] - gs[ig].psi[1]), cocos_clockwise_phi,
+    )[1] for ig in 1:length(gs)]
+    println("Test files are identified with COCOS = $gcocos")
     # Add one geqdsk
     println("test file 1 info: filename = $(gs[1].file), time = $(gs[1].time)")
     dd = IMASdd.dd()
     eqt = resize!(dd.equilibrium.time_slice, 1)[1]
-    EFIT.geqdsk2imas!(gs[1], eqt; wall=dd.wall, add_derived=true)
+    EFIT.geqdsk2imas!(gs[1], eqt; wall=dd.wall, add_derived=true, cocos_clockwise_phi=cocos_clockwise_phi)
     @test length(eqt.profiles_2d[1].grid.dim1) > 1
     @test eqt.time == gs[1].time
     # Add another geqdsk to another index
     println("test file 2 info: filename = $(gs[2].file), time = $(gs[2].time)")
     idx = 2
-    EFIT.geqdsk2imas!(gs[2], dd.equilibrium, idx, add_derived=true)
+    EFIT.geqdsk2imas!(gs[2], dd.equilibrium, idx, add_derived=true, cocos_clockwise_phi=cocos_clockwise_phi)
     eqt2 = dd.equilibrium.time_slice[idx]
     @test length(eqt2.profiles_2d[1].grid.dim1) > 1
     @test abs(dd.equilibrium.vacuum_toroidal_field.b0[idx]) > 0.0
     @test eqt2.time == gs[2].time
     # Add multiple geqdsks
     newdd = IMASdd.dd()
-    EFIT.geqdsk2imas!(gs, newdd; add_derived=true)
+    EFIT.geqdsk2imas!(gs, newdd; add_derived=true, cocos_clockwise_phi=cocos_clockwise_phi)
     @test length(newdd.equilibrium.time_slice) == length(gs)
     shot = parse(Int, split(split(gs[1].file, "g")[end], ".")[1])
     @test newdd.dataset_description.data_entry.pulse == shot
@@ -174,29 +180,48 @@ end
     end
 
     # Reverse the process
-    gs2 = EFIT.imas2geqdsk(newdd)
-    gg1 = EFIT.imas2geqdsk(newdd, 1)
-    gg2 = EFIT.imas2geqdsk(newdd, 2)
+    # This part will not recover the original files if they have different cocos, since
+    # the interface doesn't allow for per-file cocos specification. Per-file cocos
+    # detection is possible on input, though.
+    gs2 = EFIT.imas2geqdsk(newdd; geqdsk_cocos=gcocos[1])
+    gg1 = EFIT.imas2geqdsk(newdd, 1; geqdsk_cocos=gcocos[1])
+    gg2_orig = EFIT.imas2geqdsk(newdd, 2; geqdsk_cocos=gcocos[2])
+    gg2_match = EFIT.imas2geqdsk(newdd, 2; geqdsk_cocos=gcocos[1])
+    gg_out_orig = [gg1, gg2_orig]
+    gg_out_match = [gg1, gg2_match]
+    gcocos2 = [CoordinateConventions.identify_cocos(
+        sign(gs2[ig].bcentr), sign(gs2[ig].current), sign(gs2[ig].qpsi[1]), sign(gs2[ig].psi[end] - gs2[ig].psi[1]), cocos_clockwise_phi,
+    )[1] for ig in 1:length(gs2)]
+    gcocos_out_orig = [CoordinateConventions.identify_cocos(
+        sign(gg_out_orig[ig].bcentr), sign(gg_out_orig[ig].current), sign(gg_out_orig[ig].qpsi[1]), sign(gg_out_orig[ig].psi[end] - gg_out_orig[ig].psi[1]), cocos_clockwise_phi,
+    )[1] for ig in 1:length(gg_out_orig)]
+    gcocos_out_match = [CoordinateConventions.identify_cocos(
+        sign(gg_out_match[ig].bcentr), sign(gg_out_match[ig].current), sign(gg_out_match[ig].qpsi[1]), sign(gg_out_match[ig].psi[end] - gg_out_match[ig].psi[1]), cocos_clockwise_phi,
+    )[1] for ig in 1:length(gg_out_match)]
+    for ig in 1:length(gs2)
+        @test gcocos[ig] == gcocos_out_orig[ig]
+        @test gcocos2[ig] == gcocos_out_match[ig]
+    end
     # There are some artifacts of using a set of random g-files for testing within a single
     # dd instead of a coherent set of slices from the same shot.
     # Only the first shot is used.
     # The contents of the file have different time units, making it hard to get the right
     # filename from the time. So, we'll reset the filename of the second file, which is also
     # the one with weird time units.
-    gg2.file = gs2[2].file= gs[2].file
+    gg2_match.file = gg2_orig.file = gs2[2].file= gs[2].file
     # Only the wall from the first file is used.
-    gg2.rlim = gs2[2].rlim = gs[2].rlim
-    gg2.zlim = gs2[2].zlim = gs[2].zlim
-    gg2.limitr = gs2[2].limitr = gs[2].limitr
+    gg2_orig.rlim = gg2_match.rlim = gs2[2].rlim = gs[2].rlim
+    gg2_orig.zlim = gg2_match.zlim = gs2[2].zlim = gs[2].zlim
+    gg2_orig.limitr = gg2_match.limitr = gs2[2].limitr = gs[2].limitr
     gcompare(gg1, gs2[1], note="read single g vs read all g from imas (slice 1)")
-    gcompare(gg2, gs2[2], note="read single g vs read all g from imas (slice 2)")
+    gcompare(gg2_match, gs2[2], note="read single g vs read all g from imas (slice 2)")
     gcompare(gg1, gs[1], note="read single g vs input 1")
-    gcompare(gg2, gs[2], note="read single g vs input 2")
+    gcompare(gg2_orig, gs[2], note="read single g vs input 2")
 
     # Make sure something weird about the second file doesn't break the wall situation
     dd3 = IMASdd.dd()
-    EFIT.geqdsk2imas!(gs[2], dd3, 1)
-    gg3 = EFIT.imas2geqdsk(dd3, 1)
+    EFIT.geqdsk2imas!(gs[2], dd3, 1, cocos_clockwise_phi=cocos_clockwise_phi)
+    gg3 = EFIT.imas2geqdsk(dd3, 1, geqdsk_cocos=gcocos[2])
     # as this is the sample with the funky time units in the header, we'll help with the filename
     gg3.file = gs[2].file
     gcompare(gg3, gs[2])

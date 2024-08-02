@@ -238,26 +238,32 @@ end
 function geqdsk2imas!(
     gs::Vector{GEQDSKFile},
     dd::IMASdd.dd;
-    geqdsk_cocos::Int=1,
+    geqdsk_cocos::Int=0,
     dd_cocos::Int=11,
+    cocos_clockwise_phi::Bool=false,
     add_derived::Bool=false,
 )
     if ismissing(dd.dataset_description.data_entry, :pulse)
         dd.dataset_description.data_entry.pulse = parse(Int, split(split(gs[1].file, ".")[end-1], "g")[2])
     end
-    geqdsk2imas!(gs, dd.equilibrium; wall=dd.wall, geqdsk_cocos=geqdsk_cocos, dd_cocos=dd_cocos, add_derived=add_derived)
+    geqdsk2imas!(
+        gs, dd.equilibrium; wall=dd.wall,
+        geqdsk_cocos=geqdsk_cocos, dd_cocos=dd_cocos, cocos_clockwise_phi=cocos_clockwise_phi,
+        add_derived=add_derived,
+    )
 end
 
 function geqdsk2imas!(
     gs::Vector{GEQDSKFile},
     eq::IMASdd.equilibrium;
     wall=nothing,
-    geqdsk_cocos::Int=1,
+    geqdsk_cocos::Int=0,
     dd_cocos::Int=11,
+    cocos_clockwise_phi::Bool=false,
     add_derived::Bool=false,
 )
     if wall !== nothing
-        geqdsk2wall!(gs[1], wall; geqdsk_cocos=geqdsk_cocos, dd_cocos=dd_cocos)
+        geqdsk2wall!(gs[1], wall; geqdsk_cocos=geqdsk_cocos, dd_cocos=dd_cocos, cocos_clockwise_phi=cocos_clockwise_phi)
     end
     nt = length(gs)
     if length(eq.time_slice) < nt
@@ -265,7 +271,11 @@ function geqdsk2imas!(
     end
     for it in 1:nt
         g = gs[it]
-        geqdsk2imas!(g, eq, it; geqdsk_cocos=geqdsk_cocos, dd_cocos=dd_cocos, add_derived=add_derived)
+        geqdsk2imas!(
+            g, eq, it;
+            geqdsk_cocos=geqdsk_cocos, dd_cocos=dd_cocos, cocos_clockwise_phi=cocos_clockwise_phi,
+            add_derived=add_derived,
+        )
     end
 end
 
@@ -273,14 +283,19 @@ function geqdsk2imas!(
     g::GEQDSKFile,
     dd::IMASdd.dd,
     time_index::Int;
-    geqdsk_cocos::Int=1,
+    geqdsk_cocos::Int=0,
     dd_cocos::Int=11,
+    cocos_clockwise_phi::Bool=false,
     add_derived::Bool=false,
 )
     if ismissing(dd.dataset_description.data_entry, :pulse)
         dd.dataset_description.data_entry.pulse = parse(Int, split(split(g.file, ".")[end-1], "g")[2])
     end
-    geqdsk2imas!(g, dd.equilibrium, time_index, wall=dd.wall, geqdsk_cocos=geqdsk_cocos, dd_cocos=dd_cocos, add_derived=add_derived)
+    geqdsk2imas!(
+        g, dd.equilibrium, time_index;
+        wall=dd.wall, geqdsk_cocos=geqdsk_cocos, dd_cocos=dd_cocos, cocos_clockwise_phi=cocos_clockwise_phi,
+        add_derived=add_derived,
+    )
 end
 
 function geqdsk2imas!(
@@ -288,10 +303,19 @@ function geqdsk2imas!(
     eq::IMASdd.equilibrium,
     time_index::Int;
     wall=nothing,
-    geqdsk_cocos::Int=1,
+    geqdsk_cocos::Int=0,
     dd_cocos::Int=11,
+    cocos_clockwise_phi::Bool=false,
     add_derived::Bool=false,
 )
+    if geqdsk_cocos == 0
+        geqdsk_cocos = CoordinateConventions.identify_cocos(
+            sign(g.bcentr), sign(g.current), sign(g.qpsi[1]), sign(g.psi[end] - g.psi[1]), cocos_clockwise_phi,
+        )[1]
+        println("  identified COCOS=$geqdsk_cocos")
+    end
+    tc = CoordinateConventions.transform_cocos(geqdsk_cocos, dd_cocos)
+
     # Make sure top level stuff is defined
     if ismissing(eq, :time)
         eq.time = Array{Float64}(undef, time_index)
@@ -308,7 +332,7 @@ function geqdsk2imas!(
 
     # Write top level data
     eq.time[time_index] = g.time
-    eq.vacuum_toroidal_field.b0[time_index] = g.bcentr
+    eq.vacuum_toroidal_field.b0[time_index] = g.bcentr .* tc["B"]
     eq.vacuum_toroidal_field.r0 = g.rcentr
 
     # Handle time slice data
@@ -316,7 +340,11 @@ function geqdsk2imas!(
         resize!(eq.time_slice, time_index)
     end
     eqt = eq.time_slice[time_index]
-    geqdsk2imas!(g, eqt, wall=wall, geqdsk_cocos=geqdsk_cocos, dd_cocos=dd_cocos, add_derived=add_derived)
+    geqdsk2imas!(
+        g, eqt;
+        wall=wall, geqdsk_cocos=geqdsk_cocos, dd_cocos=dd_cocos, cocos_clockwise_phi=cocos_clockwise_phi,
+        add_derived=add_derived,
+    )
 end
 
 """
@@ -329,10 +357,17 @@ function geqdsk2imas!(
     g::GEQDSKFile,
     eqt::IMASdd.equilibrium__time_slice{Float64};
     wall=nothing,
-    geqdsk_cocos::Int=1,
+    geqdsk_cocos::Int=0,
     dd_cocos::Int=11,
+    cocos_clockwise_phi::Bool=false,
     add_derived::Bool=false,
 )
+    if geqdsk_cocos == 0
+        geqdsk_cocos = CoordinateConventions.identify_cocos(
+            sign(g.bcentr), sign(g.current), sign(g.qpsi[1]), sign(g.psi[end] - g.psi[1]), cocos_clockwise_phi,
+        )[1]
+        println("  identified COCOS=$geqdsk_cocos")
+    end
     tc = CoordinateConventions.transform_cocos(geqdsk_cocos, dd_cocos)
 
     eqt.time = g.time
@@ -392,9 +427,16 @@ Does simple calculations related to the flux map and stores results in IMAS
 function derived_g2imas!(
     g::GEQDSKFile,
     eqt::IMASdd.equilibrium__time_slice;
-    geqdsk_cocos::Int=1,
+    geqdsk_cocos::Int=0,
     dd_cocos::Int=11,
+    cocos_clockwise_phi::Bool=false,
 )
+    if geqdsk_cocos == 0
+        geqdsk_cocos = CoordinateConventions.identify_cocos(
+            sign(g.bcentr), sign(g.current), sign(g.qpsi[1]), sign(g.psi[end] - g.psi[1]), cocos_clockwise_phi
+        )[1]
+        println("  identified COCOS=$geqdsk_cocos")
+    end
     tc = CoordinateConventions.transform_cocos(geqdsk_cocos, dd_cocos)
 
     # X-points
@@ -441,9 +483,16 @@ Writes wall data from GEQDSK to the wall IDS in IMAS.
 function geqdsk2wall!(
     g::GEQDSKFile,
     wall::IMASdd.wall;
-    geqdsk_cocos::Int=1,
+    geqdsk_cocos::Int=0,
     dd_cocos::Int=11,
+    cocos_clockwise_phi::Bool=false,
 )
+    if geqdsk_cocos == 0
+        geqdsk_cocos = CoordinateConventions.identify_cocos(
+            sign(g.bcentr), sign(g.current), sign(g.qpsi[1]), sign(g.psi[end] - g.psi[1]), cocos_clockwise_phi,
+        )[1]
+        println("  identified COCOS=$geqdsk_cocos")
+    end
     tc = CoordinateConventions.transform_cocos(geqdsk_cocos, dd_cocos)
     resize!(wall.description_2d, 1)
     limiter = wall.description_2d[1].limiter
@@ -514,7 +563,7 @@ function imas2geqdsk(
     z = p2.grid.dim2 ./ tc["Z"]
     psirz = p2.psi ./ tc["PSI"]
 
-    bcentr = dd.equilibrium.vacuum_toroidal_field.b0[time_index]
+    bcentr = dd.equilibrium.vacuum_toroidal_field.b0[time_index] ./ tc["B"]
     time = eqt.time
     println("eqt.time = $(eqt.time), time out = $time")
     rleft = minimum(r)
