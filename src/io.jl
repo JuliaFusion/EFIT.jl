@@ -234,6 +234,49 @@ function readg(gfile; set_time=nothing)
 end
 
 function geqdsk2imas!(
+    gs::Vector{GEQDSKFile},
+    dd::IMASdd.dd;
+    geqdsk_cocos::Int=1,
+    dd_cocos::Int=11,
+    add_derived::Bool=false,
+)
+    geqdsk2imas!(gs, dd.equilibrium; wall=dd.wall, geqdsk_cocos=geqdsk_cocos, dd_cocos=dd_cocos, add_derived=add_derived)
+end
+
+function geqdsk2imas!(
+    gs::Vector{GEQDSKFile},
+    eq::IMASdd.equilibrium;
+    wall=nothing,
+    geqdsk_cocos::Int=1,
+    dd_cocos::Int=11,
+    add_derived::Bool=false,
+)
+    if wall !== nothing
+        geqdsk2wall!(gs[1], wall; geqdsk_cocos=geqdsk_cocos, dd_cocos=dd_cocos)
+    end
+    nt = length(gs)
+    if length(eq.time_slice) < nt
+        resize!(eq.time_slice, nt)
+    end
+    for it in 1:nt
+        eqt = eq.time_slice[it]
+        g = gs[it]
+        geqdsk2imas!(g, eqt, geqdsk_cocos=geqdsk_cocos, dd_cocos=dd_cocos, add_derived=add_derived)
+    end
+end
+
+function geqdsk2imas!(
+    g::GEQDSKFile,
+    dd::IMASdd.dd,
+    time_index::Int;
+    geqdsk_cocos::Int=1,
+    dd_cocos::Int=11,
+    add_derived::Bool=false,
+)
+    geqdsk2imas!(g, dd.equilibrium, time_index, wall=dd.wall, geqdsk_cocos=geqdsk_cocos, dd_cocos=dd_cocos, add_derived=add_derived)
+end
+
+function geqdsk2imas!(
     g::GEQDSKFile,
     eq::IMASdd.equilibrium,
     time_index::Int;

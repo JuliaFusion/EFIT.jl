@@ -97,13 +97,27 @@ end
 end
 
 @testset "imas" begin
+    # Add one geqdsk
     dd = IMASdd.dd()
     eqt = resize!(dd.equilibrium.time_slice, 1)[1]
     EFIT.geqdsk2imas!(g, eqt; wall=dd.wall, add_derived=true)
     @test length(eqt.profiles_2d[1].grid.dim1) > 1
+    # Add another geqdsk to another index
     idx = 2
-    EFIT.geqdsk2imas!(g, dd.equilibrium, idx, add_derived=true)
+    EFIT.geqdsk2imas!(g2, dd.equilibrium, idx, add_derived=true)
     eqt2 = dd.equilibrium.time_slice[idx]
     @test length(eqt2.profiles_2d[1].grid.dim1) > 1
     @test abs(dd.equilibrium.vacuum_toroidal_field.b0[idx]) > 0.0
+    # Add multiple geqdsks
+    newdd = IMASdd.dd()
+    gs = [g, g2]
+    EFIT.geqdsk2imas!(gs, newdd; add_derived=true)
+    @test length(newdd.equilibrium.time_slice) == length(gs)
+    for slice in 1:length(gs)
+        eqt1 = dd.equilibrium.time_slice[1]
+        eqt2 = newdd.equilibrium.time_slice[1]
+        for field in [:ip, :psi_axis, :psi_boundary]
+            @test getproperty(eqt1.global_quantities, field) == getproperty(eqt2.global_quantities, field)
+        end
+    end
 end
