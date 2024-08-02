@@ -235,6 +235,19 @@ function readg(gfile; set_time=nothing)
     return g
 end
 
+geqdsk2imas_generic = """Variations of this function accept single GEQDSKFile instances or vectors of these.
+Also, a complete data dictionary can be provided, or a reference to the equilibrium IDS,
+(both of these needing instruction on which time slice to write to) or to a single
+equilibrium.time\\_slice. If the top level DD isn't referenced, a reference to the
+wall IDS can be passed in separately to allow writing wall data.
+The COCOS of the incoming geqdsk files can be spefificed, or it can be automatically
+detected by setting geqdsk\\_cocos=0 (the default). If multiple COCOS are possible,
+the first one in the list will be chosen, which usually means 3 intead of 13, for example.
+To narrow down the choice of COCOS, it is necessary to specify the direction of toroidal
+angle using cocos\\_clockwise\\_phi, which defaults to false (meaning phi is CCW).
+Lastly, limited derived data can be added by setting add\\_derived=true. Only calculations
+that are already within EFIT.jl will be used to contribute to this extension."""
+
 """
     function geqdsk2imas!(
         gs::Vector{GEQDSKFile},
@@ -247,18 +260,7 @@ end
 
 Utility for writing equilibrium data from GEQDSKFiles to IMAS schema.
 
-Variations of this function accept single GEQDSKFile instances or vectors of these.
-Also, a complete data dictionary can be provided, or a reference to the equilibrium IDS,
-(both of these needing instruction on which time slice to write to) or to a single
-equilibrium.time\\_slice. If the top level DD isn't referenced, a reference to the
-wall IDS can be passed in separately to allow writing wall data.
-The COCOS of the incoming geqdsk files can be spefificed, or it can be automatically
-detected by setting geqdsk\\_cocos=0 (the default). If multiple COCOS are possible,
-the first one in the list will be chosen, which usually means 3 intead of 13, for example.
-To narrow down the choice of COCOS, it is necessary to specify the direction of toroidal
-angle using cocos\\_clockwise\\_phi, which defaults to false (meaning phi is CCW).
-Lastly, limited derived data can be added by setting add\\_derived=true. Only calculations
-that are already within EFIT.jl will be used to contribute to this extension.
+$geqdsk2imas_generic
 
     gs: Vector of GEQDSKFile instances
     dd: Top level IMAS data dictionary
@@ -297,6 +299,8 @@ end
     )
 
 Utility for writing equilibrium data from GEQDSKFile instances to IMAS equilibrium IDS
+
+$geqdsk2imas_generic
 
     gs: Vector of GEQDSKFile instances
     eq: Reference to the equilibrium IDS
@@ -345,6 +349,8 @@ end
 
 Utility for writing equilibrium data from a GEQDSKFile to IMAS DD.
 
+$geqdsk2imas_generic
+
     g: GEQDSKFile instance
     dd: IMAS data dictionary
     time_index: index of the destination for equilibrium data within equilibrium.time_slice
@@ -385,6 +391,8 @@ end
     )
 
 Utility for writing equilibrium data from a GEQDSKFile to IMAS equilibrium IDS
+
+$geqdsk2imas_generic
 
     g: GEQDSKFile instance
     eq: Reference to equilibrium IDS
@@ -457,6 +465,8 @@ end
 
 Writes equilibrium data from a GEQDSK file to IMAS equilibrium IDS in a specific
 time slice. Can optionally include writing wall data to the wall IDS.
+
+$geqdsk2imas_generic
 
     g: GEQDSKFile instance
     eqt: A specific time slice within dd.equilibrium.time_slice
