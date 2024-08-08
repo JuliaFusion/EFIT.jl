@@ -149,14 +149,15 @@ end
     # Add one geqdsk
     println("test file 1 info: filename = $(gs[1].file), time = $(gs[1].time)")
     dd = IMASdd.dd()
-    eqt = resize!(dd.equilibrium.time_slice, 1)[1]
+    eqt = resize!(dd.equilibrium.time_slice, length(gs))[1]
+    dd.equilibrium.time = [g.time, for g in gs]
     EFIT.geqdsk2imas!(gs[1], eqt; wall=dd.wall, add_derived=true, cocos_clockwise_phi=cocos_clockwise_phi)
     @test length(eqt.profiles_2d[1].grid.dim1) > 1
     @test eqt.time == gs[1].time
     # Add another geqdsk to another index
     println("test file 2 info: filename = $(gs[2].file), time = $(gs[2].time)")
     idx = 2
-    EFIT.geqdsk2imas!(gs[2], dd.equilibrium, idx, add_derived=true, cocos_clockwise_phi=cocos_clockwise_phi)
+    EFIT.geqdsk2imas!(gs[2], dd.equilibrium, add_derived=true, cocos_clockwise_phi=cocos_clockwise_phi)
     eqt2 = dd.equilibrium.time_slice[idx]
     @test length(eqt2.profiles_2d[1].grid.dim1) > 1
     @test abs(dd.equilibrium.vacuum_toroidal_field.b0[idx]) > 0.0
