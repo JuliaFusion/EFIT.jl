@@ -98,9 +98,7 @@ end
 end
 
 function gcompare(g1::GEQDSKFile, g2::GEQDSKFile; note=nothing, verbose::Bool=false)
-    fields = split("file,time,nw,nh,r,z,rdim,zdim,rleft,zmid,nbbbs,rbbbs,zbbbs,limitr,rlim,zlim,"*
-    "rcentr,bcentr,rmaxis,zmaxis,simag,sibry,psi,current,fpol,pres,ffprim,pprime,"*
-    "qpsi,psirz,rhovn", ",")
+    fields = fieldnames(GEQDSKFile)
     mismatched_fields = []
     if note !== nothing
         println(note)
