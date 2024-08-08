@@ -396,7 +396,7 @@ function geqdsk2imas!(
         geqdsk_cocos = CoordinateConventions.identify_cocos(
             sign(g.bcentr), sign(g.current), sign(g.qpsi[1]), sign(g.psi[end] - g.psi[1]), cocos_clockwise_phi,
         )[1]
-        println("  identified COCOS=$geqdsk_cocos")
+        @debug "  identified COCOS=$geqdsk_cocos"
     end
     tc = CoordinateConventions.transform_cocos(geqdsk_cocos, dd_cocos)
 
@@ -466,7 +466,7 @@ function geqdsk2imas!(
         geqdsk_cocos = CoordinateConventions.identify_cocos(
             sign(g.bcentr), sign(g.current), sign(g.qpsi[1]), sign(g.psi[end] - g.psi[1]), cocos_clockwise_phi,
         )[1]
-        println("  identified COCOS=$geqdsk_cocos")
+        @debug "  identified COCOS=$geqdsk_cocos"
     end
     tc = CoordinateConventions.transform_cocos(geqdsk_cocos, dd_cocos)
 
@@ -547,7 +547,7 @@ function derived_g2imas!(
         geqdsk_cocos = CoordinateConventions.identify_cocos(
             sign(g.bcentr), sign(g.current), sign(g.qpsi[1]), sign(g.psi[end] - g.psi[1]), cocos_clockwise_phi
         )[1]
-        println("  identified COCOS=$geqdsk_cocos")
+        @debug "  identified COCOS=$geqdsk_cocos"
     end
     tc = CoordinateConventions.transform_cocos(geqdsk_cocos, dd_cocos)
 
@@ -615,7 +615,7 @@ function geqdsk2wall!(
         geqdsk_cocos = CoordinateConventions.identify_cocos(
             sign(g.bcentr), sign(g.current), sign(g.qpsi[1]), sign(g.psi[end] - g.psi[1]), cocos_clockwise_phi,
         )[1]
-        println("  identified COCOS=$geqdsk_cocos")
+        @debug "  identified COCOS=$geqdsk_cocos"
     end
     tc = CoordinateConventions.transform_cocos(geqdsk_cocos, dd_cocos)
     resize!(wall.description_2d, 1)
@@ -716,7 +716,7 @@ function imas2geqdsk(
 
     bcentr = dd.equilibrium.vacuum_toroidal_field.b0[time_index] ./ tc["B"]
     time = eqt.time
-    println("eqt.time = $(eqt.time), time out = $time")
+    @debug "eqt.time = $(eqt.time), time out = $time"
     rleft = minimum(r)
     rdim = maximum(r) - rleft
     zdim = maximum(z) - minimum(z)
@@ -724,7 +724,7 @@ function imas2geqdsk(
     nh = length(z)
     itime = Int(round(time * 1000))
     gfile = "g" * lpad(shot, 6, '0') * "." * lpad(itime, 5, '0')
-    println("shot $shot, gfile = $gfile")
+    @debug "shot $shot, gfile = $gfile"
 
     r = range(rleft, rleft + rdim, length=nw)
     z = range(zmid - 0.5*zdim, zmid + 0.5*zdim, length=nh)
