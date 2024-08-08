@@ -303,6 +303,7 @@ function geqdsk2imas!(
     cocos_clockwise_phi::Bool=false,
     add_derived::Bool=false,
 )
+    dd = IMASdd.top_dd(eq)
     if ismissing(dd.dataset_description.data_entry, :pulse)
         dd.dataset_description.data_entry.pulse = parse(Int, split(split(gs[1].file, ".")[end-1], "g")[2])
     end
@@ -313,17 +314,27 @@ function geqdsk2imas!(
     if length(eq.time_slice) == 0  # Blank is okay, but if populated, it had better be compatible
         resize!(eq.time_slice, nt)
         eq.time = [g.time for g in gs]
+        for i in 1:nt
+            eq.time_slice[i].time = eq.time[i]
+        end
     end
 
-    if ismissing(eq.vacuum_toroidal_field, :b0)
-        eq.vacuum_toroidal_field.b0 = Array{Float64}(undef, nt)
-    end
-    if length(eq.vacuum_toroidal_field.b0) == 0
-        resize!(eq.vacuum_toroidal_field.b0, nt)
-    end
     # Write top level data
     eq.time = [g.time for g in gs]
-    eq.vacuum_toroidal_field.b0 = [g.bcentr .* tc["B"] for g in gs]
+    bb = zeros(length(gs))
+    for i in 1:length(gs)
+        if geqdsk_cocos == 0
+            g = gs[i]
+            geqdsk_cocos_ = CoordinateConventions.identify_cocos(
+                sign(g.bcentr), sign(g.current), sign(g.qpsi[1]), sign(g.psi[end] - g.psi[1]), cocos_clockwise_phi,
+            )[1]
+        else
+            geqdsk_cocos_ = geqdsk_cocos
+        end
+        tc = CoordinateConventions.transform_cocos(geqdsk_cocos_, dd_cocos)
+        bb[i] = g.bcentr .* tc["B"]
+    end
+    eq.vacuum_toroidal_field.b0 = bb
     eq.vacuum_toroidal_field.r0 = gs[1].rcentr
 
     for g in gs
@@ -410,7 +421,15 @@ function geqdsk2imas!(
     end
     tc = CoordinateConventions.transform_cocos(geqdsk_cocos, dd_cocos)
 
-    dd = IMAS.top_dd(eq)
+    if length(eq.time_slice) == 0
+        resize!(eq.time_slice, 1)
+        eq.time_slice[1].time = g.time
+    end
+    if ismissing(eq, :time)
+        eq.time = [g.time]
+    end
+
+    dd = IMASdd.top_dd(eq)
     original_global_time = dd.global_time
     try
         dd.global_time = g.time
@@ -463,7 +482,21 @@ function geqdsk2imas!(
     end
     tc = CoordinateConventions.transform_cocos(geqdsk_cocos, dd_cocos)
 
-    eqt.time = g.time
+    if ismissing(eqt, :time)
+        eqt.time = g.time
+    end
+    dd = IMASdd.top_dd(eqt)
+    original_global_time = dd.global_time
+    try
+        dd.global_time = g.time
+        if ismissing(dd.equilibrium.vacuum_toroidal_field, :b0)
+            dd.equilibrium.vacuum_toroidal_field.b0 = zeros(length(dd.equilibrium.time))
+        end
+        IMASdd.@ddtime(dd.equilibrium.vacuum_toroidal_field.b0 = g.bcentr .* tc["B"])
+        dd.equilibrium.vacuum_toroidal_field.r0 = g.rcentr
+    finally
+        dd.global_time = original_global_time
+    end
 
     # Global and boundary
     gq = eqt.global_quantities
@@ -710,7 +743,7 @@ function imas2geqdsk(
         z = p2.grid.dim2 ./ tc["Z"]
         psirz = p2.psi ./ tc["PSI"]
 
-        bcentr = dd.equilibrium.vacuum_toroidal_field.b0[] ./ tc["B"]
+        bcentr = IMASdd.@ddtime(dd.equilibrium.vacuum_toroidal_field.b0) ./ tc["B"]
         time = eqt.time
         @debug "eqt.time = $(eqt.time), time out = $time"
         rleft = minimum(r)
