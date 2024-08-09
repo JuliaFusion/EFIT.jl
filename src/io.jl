@@ -378,8 +378,7 @@ function geqdsk2imas!(
     end
     geqdsk2imas!(
         g, dd.equilibrium;
-        wall=dd.wall, geqdsk_cocos=geqdsk_cocos, dd_cocos=dd_cocos, cocos_clockwise_phi=cocos_clockwise_phi,
-        add_derived=add_derived,
+        dd.wall, geqdsk_cocos, dd_cocos, cocos_clockwise_phi, add_derived,
     )
 end
 
@@ -421,22 +420,14 @@ function geqdsk2imas!(
     end
     tc = CoordinateConventions.transform_cocos(geqdsk_cocos, dd_cocos)
 
-    if length(eq.time_slice) == 0
-        resize!(eq.time_slice, 1)
-        eq.time_slice[1].time = g.time
-    end
-    if ismissing(eq, :time)
-        eq.time = [g.time]
-    end
-
     dd = IMASdd.top_dd(eq)
     original_global_time = dd.global_time
     try
         dd.global_time = g.time
+        resize!(eq.time_slice)
         geqdsk2imas!(
             g, eq.time_slice[];
-            wall=wall, geqdsk_cocos=geqdsk_cocos, dd_cocos=dd_cocos, cocos_clockwise_phi=cocos_clockwise_phi,
-            add_derived=add_derived,
+            wall, geqdsk_cocos, dd_cocos, cocos_clockwise_phi, add_derived,
         )
     finally
         dd.global_time = original_global_time
@@ -482,16 +473,10 @@ function geqdsk2imas!(
     end
     tc = CoordinateConventions.transform_cocos(geqdsk_cocos, dd_cocos)
 
-    if ismissing(eqt, :time)
-        eqt.time = g.time
-    end
     dd = IMASdd.top_dd(eqt)
     original_global_time = dd.global_time
     try
         dd.global_time = g.time
-        if ismissing(dd.equilibrium.vacuum_toroidal_field, :b0)
-            dd.equilibrium.vacuum_toroidal_field.b0 = zeros(length(dd.equilibrium.time))
-        end
         IMASdd.@ddtime(dd.equilibrium.vacuum_toroidal_field.b0 = g.bcentr .* tc["B"])
         dd.equilibrium.vacuum_toroidal_field.r0 = g.rcentr
     finally
