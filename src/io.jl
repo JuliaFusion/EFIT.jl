@@ -34,6 +34,18 @@ mutable struct GEQDSKFile
     rhovn::Vector{Float64}          # Square root of toroidal flux, normalized
 end
 
+# Define hash function using fieldnames and getfield
+function Base.hash(x::GEQDSKFile, h::UInt)
+    for field in fieldnames(GEQDSKFile)
+        h = hash(getfield(x, field), h)
+    end
+    return h
+end
+# Define == using fieldnames and getfield
+Base.:(==)(a::GEQDSKFile, b::GEQDSKFile) = all(field -> getfield(a, field) == getfield(b, field), fieldnames(GEQDSKFile))
+# Define isequal using fieldnames and getfield
+Base.isequal(a::GEQDSKFile, b::GEQDSKFile) = all(field -> isequal(getfield(a, field), getfield(b, field)), fieldnames(GEQDSKFile))
+
 function Base.show(io::IO, g::GEQDSKFile)
     print(io,"GEQDSKFile: \"",g.file,"\"")
 end

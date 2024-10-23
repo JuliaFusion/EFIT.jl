@@ -94,3 +94,31 @@ end
         end
     end
 end
+
+@testset "writeg" begin
+
+    for test_gfile in [EFIT.test_gfile, EFIT.test_gfile2]
+
+        ori_g = readg(EFIT.test_gfile)
+
+        # Create and write a tmporary EQDSK file
+        (tmp_filename, ~) = Base.mktemp()
+        writeg(ori_g, tmp_filename; desc="\nHello, can you read me?\n\n")
+
+        # Read the temporary EQDSK file
+        new_g = readg(tmp_filename)
+
+        # Match the "file" name for a fair comparison
+        ori_g.file = "we got the same name for a fair comparison"
+        new_g.file = "we got the same name for a fair comparison"
+
+        # Check if new_g is equivalent to ori_g
+        @test new_g == ori_g
+        @test isequal(new_g, ori_g)
+
+        # Delete temporary file
+        rm(tmp_filename, force=true)
+    end
+
+
+end
