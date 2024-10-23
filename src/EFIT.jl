@@ -3,7 +3,7 @@ __precompile__()
 module EFIT
 
 include("io.jl")
-export readg, GEQDSKFile
+export readg, writeg, GEQDSKFile
 
 include("utils.jl")
 export triangularity, ellipticity, elongation, minor_radius, major_radius, aspect_ratio, elevation

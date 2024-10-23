@@ -1,3 +1,5 @@
+using Printf
+
 mutable struct GEQDSKFile
     file::String                    # Source file
     time::Float64                   # Time of the equilibrium reconstruction, in seconds
@@ -228,4 +230,66 @@ function readg(gfile; set_time=nothing)
                    qpsi,psirz,rhovn)
 
     return g
+end
+
+function write_vector_data_in_chunks(io::IOStream, v::Vector{Float64})
+    # Iterate over the vector in chunks of 5 elements
+    for chunk in Iterators.partition(v, 5)
+        # Format each number with %15.8E
+        formatted_numbers = [@sprintf("%15.8E", num) for num in chunk]
+        # Join the formatted numbers into a single string with spaces
+        line = join(formatted_numbers, " ")
+        # Write the line to the io stream
+        println(io, line)
+    end
+end
+
+
+# Function to write the GEQDSKFile struct to a G-file with explicit error handling
+function writeg(g::GEQDSKFile, filename::String; desc::String="description")
+    if isdir(filename)
+        @error("Error: A directory with the name '$filename' already exists.")
+        return false
+    elseif isfile(filename)
+        @warn("Warning: A file with the name '$filename' already exists. It will be overwritten.")
+    end
+
+    try
+        # Open the target file for writing
+        open(filename, "w") do f
+            # Write header
+            # Note: GEQDSKFile.time is converted to ms (to follow readg's notation)
+            # Remove all newline characters in description
+            clean_desc = replace(desc, "\n" => "")
+            @printf(f,"%s  %.3f  %d  %d  %d\n",clean_desc, 1e3*g.time, 0, g.nw, g.nh)
+
+            @printf(f,"%15.8E %15.8E %15.8E %15.8E %15.8E\n", g.rdim, g.zdim, g.rcentr, g.rleft, g.zmid)
+            @printf(f,"%15.8E %15.8E %15.8E %15.8E %15.8E\n", g.rmaxis, g.zmaxis, g.simag, g.sibry, g.bcentr)
+            @printf(f,"%15.8E %15.8E %15.8E %15.8E %15.8E\n", g.current, g.simag, 0.0, g.rmaxis, 0.0)
+            @printf(f,"%15.8E %15.8E %15.8E %15.8E %15.8E\n", g.zmaxis, 0.0, g.sibry, 0.0, 0.0)
+
+            write_vector_data_in_chunks(f, g.fpol)
+            write_vector_data_in_chunks(f, g.pres)
+            write_vector_data_in_chunks(f, g.ffprim)
+            write_vector_data_in_chunks(f, g.pprime)
+
+            write_vector_data_in_chunks(f, vec(g.psirz))
+
+            write_vector_data_in_chunks(f, g.qpsi)
+
+            @printf(f,"%d %d\n", g.nbbbs, g.limitr)
+
+
+            bbbs_rz = Vector(vec(hcat(g.rbbbs, g.zbbbs)'))
+            write_vector_data_in_chunks(f, vec(bbbs_rz))
+
+            lim_rz = Vector(vec(hcat(g.rlim, g.zlim)'))
+            write_vector_data_in_chunks(f, vec(lim_rz))
+        end
+        @info "Successfully wrote GEQDSKFile to '$filename'."
+        return true
+    catch e
+        @error "An error occurred while writing to file '$filename': $e"
+        return false
+    end
 end
