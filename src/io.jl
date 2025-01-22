@@ -1,4 +1,5 @@
 using Printf
+import Dates
 
 mutable struct GEQDSKFile
     file::String                    # Source file
@@ -257,7 +258,10 @@ function write_vector_data_in_chunks(io::IOStream, v::Vector{Float64})
 end
 
 # Function to write the GEQDSKFile struct to a G-file with explicit error handling
-function writeg(g::GEQDSKFile, filename::String; desc::String="description")
+function writeg(g::GEQDSKFile, filename::String;
+                desc::String="EFIT.jl   $(Dates.today())",
+                shot::String="000000",
+                time::String= @sprintf("%8d", 1e3 * g.time))
     if isdir(filename)
         @error("Error: A directory with the name '$filename' already exists.")
         return false
@@ -272,8 +276,8 @@ function writeg(g::GEQDSKFile, filename::String; desc::String="description")
             # Note: GEQDSKFile.time is converted to ms (to follow readg's notation)
             # Remove all newline characters in description
             clean_desc = replace(desc, "\n" => "")
-            desc_with_time = clean_desc*" "*string(1e3*g.time)
-            @printf(f,"%-48s%4d%4d%4d\n",desc_with_time, 0, g.nw, g.nh)
+            description = join([clean_desc, shot, time], "   ")
+            @printf(f,"%-48s%4d%4d%4d\n",description, 0, g.nw, g.nh)
 
             @printf(f,"%16.9E%16.9E%16.9E%16.9E%16.9E\n", g.rdim, g.zdim, g.rcentr, g.rleft, g.zmid)
             @printf(f,"%16.9E%16.9E%16.9E%16.9E%16.9E\n", g.rmaxis, g.zmaxis, g.simag, g.sibry, g.bcentr)
