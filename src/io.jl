@@ -247,15 +247,14 @@ end
 function write_vector_data_in_chunks(io::IOStream, v::Vector{Float64})
     # Iterate over the vector in chunks of 5 elements
     for chunk in Iterators.partition(v, 5)
-        # Format each number with %15.8E
-        formatted_numbers = [@sprintf("%15.8E", num) for num in chunk]
-        # Join the formatted numbers into a single string with spaces
-        line = join(formatted_numbers, " ")
+        # Format each number with %16.9E
+        formatted_numbers = [@sprintf("%16.9E", num) for num in chunk]
+        # Join the formatted numbers into a single string without whitespaces
+        line = join(formatted_numbers)
         # Write the line to the io stream
         println(io, line)
     end
 end
-
 
 # Function to write the GEQDSKFile struct to a G-file with explicit error handling
 function writeg(g::GEQDSKFile, filename::String; desc::String="description")
@@ -273,12 +272,13 @@ function writeg(g::GEQDSKFile, filename::String; desc::String="description")
             # Note: GEQDSKFile.time is converted to ms (to follow readg's notation)
             # Remove all newline characters in description
             clean_desc = replace(desc, "\n" => "")
-            @printf(f,"%s  %.3f  %d  %d  %d\n",clean_desc, 1e3*g.time, 0, g.nw, g.nh)
+            desc_with_time = clean_desc*" "*string(1e3*g.time)
+            @printf(f,"%-48s%4d%4d%4d\n",desc_with_time, 0, g.nw, g.nh)
 
-            @printf(f,"%15.8E %15.8E %15.8E %15.8E %15.8E\n", g.rdim, g.zdim, g.rcentr, g.rleft, g.zmid)
-            @printf(f,"%15.8E %15.8E %15.8E %15.8E %15.8E\n", g.rmaxis, g.zmaxis, g.simag, g.sibry, g.bcentr)
-            @printf(f,"%15.8E %15.8E %15.8E %15.8E %15.8E\n", g.current, g.simag, 0.0, g.rmaxis, 0.0)
-            @printf(f,"%15.8E %15.8E %15.8E %15.8E %15.8E\n", g.zmaxis, 0.0, g.sibry, 0.0, 0.0)
+            @printf(f,"%16.9E%16.9E%16.9E%16.9E%16.9E\n", g.rdim, g.zdim, g.rcentr, g.rleft, g.zmid)
+            @printf(f,"%16.9E%16.9E%16.9E%16.9E%16.9E\n", g.rmaxis, g.zmaxis, g.simag, g.sibry, g.bcentr)
+            @printf(f,"%16.9E%16.9E%16.9E%16.9E%16.9E\n", g.current, g.simag, 0.0, g.rmaxis, 0.0)
+            @printf(f,"%16.9E%16.9E%16.9E%16.9E%16.9E\n", g.zmaxis, 0.0, g.sibry, 0.0, 0.0)
 
             write_vector_data_in_chunks(f, g.fpol)
             write_vector_data_in_chunks(f, g.pres)
@@ -290,7 +290,6 @@ function writeg(g::GEQDSKFile, filename::String; desc::String="description")
             write_vector_data_in_chunks(f, g.qpsi)
 
             @printf(f,"%d %d\n", g.nbbbs, g.limitr)
-
 
             bbbs_rz = Vector(vec(hcat(g.rbbbs, g.zbbbs)'))
             write_vector_data_in_chunks(f, vec(bbbs_rz))
