@@ -1,7 +1,7 @@
 name = "EFIT"
 author = ["Luke Stagner <stagnerl@fusion.gat.com>"]
 uuid = "cda752c5-6b03-55a3-9e33-132a441b0c17"
-version = "1.0.2"
+version = "1.0.3"
 
 [deps]
 IMASdd = "c5a45a97-b3f9-491c-b9a7-aa88c3bc0067"
@@ -10,7 +10,7 @@ PolygonOps = "647866c9-e3ac-4575-94e7-e3d426903924"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
 [compat]
-IMASdd = "2"
+IMASdd = "2,3"
 Interpolations = "0.14.7, 0.15"
 PolygonOps = "0.1"
 Printf = "1.11.0"
