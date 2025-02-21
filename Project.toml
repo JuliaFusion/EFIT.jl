@@ -11,7 +11,7 @@ PolygonOps = "647866c9-e3ac-4575-94e7-e3d426903924"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
 [compat]
-IMASdd = "2,3"
+IMASdd = "2,3,4"
 Interpolations = "0.14.7, 0.15"
 PolygonOps = "0.1"
 Printf = "1.11.0"
