@@ -1,4 +1,6 @@
 using Printf
+import IMASdd
+import CoordinateConventions
 
 mutable struct GEQDSKFile
     file::String                    # Source file
@@ -237,9 +239,11 @@ function readg(gfile; set_time=nothing)
     z = range(zmid - 0.5*zdim, zmid + 0.5*zdim, length=nh)
     psi = range(simag, sibry, length=nw)
 
-    g = GEQDSKFile(gfile,time,nw,nh,r,z,rdim,zdim,rleft,zmid,nbbbs,rbbbs,zbbbs,limitr,rlim,zlim,
-                   rcentr,bcentr,rmaxis,zmaxis,simag,sibry,psi,current,fpol,pres,ffprim,pprime,
-                   qpsi,psirz,rhovn)
+    g = GEQDSKFile(
+        splitpath(gfile)[end],time,nw,nh,r,z,rdim,zdim,rleft,zmid,nbbbs,rbbbs,zbbbs,
+        limitr,rlim,zlim,rcentr,bcentr,rmaxis,zmaxis,simag,sibry,psi,current,fpol,pres,
+        ffprim,pprime,qpsi,psirz,rhovn
+    )
 
     return g
 end
@@ -255,7 +259,6 @@ function write_vector_data_in_chunks(io::IOStream, v::Vector{Float64})
         println(io, line)
     end
 end
-
 
 # Function to write the GEQDSKFile struct to a G-file with explicit error handling
 function writeg(g::GEQDSKFile, filename::String; desc::String="description")
