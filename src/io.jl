@@ -264,8 +264,9 @@ end
 # Function to write the GEQDSKFile struct to a G-file with explicit error handling
 function writeg(g::GEQDSKFile, filename::String;
                 desc::String="EFIT.jl   $(Dates.today())",
-                shot::String="000000",
-                time::String= @sprintf("%8d", 1e3 * g.time))
+                desc::String="EFIT.jl   $(Dates.format(Dates.today(), "dd/mm/yyyy"))",
+                shot::String="#000000",
+                time::String= @sprintf("%dms", 1e3 * g.time))
     if isdir(filename)
         @error("Error: A directory with the name '$filename' already exists.")
         return false
@@ -281,6 +282,16 @@ function writeg(g::GEQDSKFile, filename::String;
             # Remove all newline characters in description
             clean_desc = replace(desc, "\n" => "")
             description = join([clean_desc, shot, time], "   ")
+
+            if length(description) > 48
+                error("Description too long (length = $(length(description)) > max 48).\n" *
+                      "Current description: '$description'\n" *
+                      "Please shorten one or more of the following kwargs:\n" *
+                      "  desc = \"$desc\"\n" *
+                      "  shot = \"$shot\"\n" *
+                      "  time = \"$time\"")
+            end
+
             @printf(f,"%-48s%4d%4d%4d\n",description, 0, g.nw, g.nh)
 
             @printf(f,"%16.9E%16.9E%16.9E%16.9E%16.9E\n", g.rdim, g.zdim, g.rcentr, g.rleft, g.zmid)
