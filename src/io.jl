@@ -263,7 +263,6 @@ end
 
 # Function to write the GEQDSKFile struct to a G-file with explicit error handling
 function writeg(g::GEQDSKFile, filename::String;
-                desc::String="EFIT.jl   $(Dates.today())",
                 desc::String="EFIT.jl   $(Dates.format(Dates.today(), "dd/mm/yyyy"))",
                 shot::String="#000000",
                 time::String= @sprintf("%dms", 1e3 * g.time))
