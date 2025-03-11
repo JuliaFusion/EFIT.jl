@@ -1,9 +1,10 @@
 name = "EFIT"
 uuid = "cda752c5-6b03-55a3-9e33-132a441b0c17"
 author = ["Luke Stagner <stagnerl@fusion.gat.com>"]
-version = "1.0.3"
+version = "1.1.1"
 
 [deps]
+CoordinateConventions = "7204ce3a-f536-43d2-be4a-fbed74e90d86"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 IMASdd = "c5a45a97-b3f9-491c-b9a7-aa88c3bc0067"
 Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
@@ -11,8 +12,9 @@ PolygonOps = "647866c9-e3ac-4575-94e7-e3d426903924"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
 [compat]
+CoordinateConventions = "1"
 Dates = "1.11.0"
-IMASdd = "2,3"
+IMASdd = "2,3,4"
 Interpolations = "0.14.7, 0.15"
 PolygonOps = "0.1"
 Printf = "1.11.0"

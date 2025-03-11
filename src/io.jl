@@ -1,5 +1,7 @@
 using Printf
 import Dates
+import IMASdd
+import CoordinateConventions
 
 mutable struct GEQDSKFile
     file::String                    # Source file
@@ -238,9 +240,11 @@ function readg(gfile; set_time=nothing)
     z = range(zmid - 0.5*zdim, zmid + 0.5*zdim, length=nh)
     psi = range(simag, sibry, length=nw)
 
-    g = GEQDSKFile(gfile,time,nw,nh,r,z,rdim,zdim,rleft,zmid,nbbbs,rbbbs,zbbbs,limitr,rlim,zlim,
-                   rcentr,bcentr,rmaxis,zmaxis,simag,sibry,psi,current,fpol,pres,ffprim,pprime,
-                   qpsi,psirz,rhovn)
+    g = GEQDSKFile(
+        splitpath(gfile)[end],time,nw,nh,r,z,rdim,zdim,rleft,zmid,nbbbs,rbbbs,zbbbs,
+        limitr,rlim,zlim,rcentr,bcentr,rmaxis,zmaxis,simag,sibry,psi,current,fpol,pres,
+        ffprim,pprime,qpsi,psirz,rhovn
+    )
 
     return g
 end
