@@ -114,6 +114,9 @@ function parse_gfile_header(headerline::String; set_time=nothing)
         try
             time /= 1000.0  # Assume it was written in ms and convert to s
         catch e
+            if time isa Expr
+                time = string(time)
+            end
             if time isa String
                 rg2 = r"([[:digit:]]+|(?:[[:punct:]]|[[:blank:]])+)"
                 try
@@ -283,12 +286,12 @@ function writeg(g::GEQDSKFile, filename::String;
             description = join([clean_desc, shot, time], "   ")
 
             if length(description) > 48
-                error("Description too long (length = $(length(description)) > max 48).\n" *
+                @error "Description too long (length = $(length(description)) > max 48).\n" *
                       "Current description: '$description'\n" *
                       "Please shorten one or more of the following kwargs:\n" *
                       "  desc = \"$desc\"\n" *
                       "  shot = \"$shot\"\n" *
-                      "  time = \"$time\"")
+                      "  time = \"$time\""
             end
 
             @printf(f,"%-48s%4d%4d%4d\n",description, 0, g.nw, g.nh)

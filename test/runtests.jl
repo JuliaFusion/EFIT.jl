@@ -1,8 +1,8 @@
 using Test
 using EFIT
 import EFIT
-import IMASdd
-import CoordinateConventions
+import EFIT.IMASdd
+import EFIT.CoordinateConventions
 
 g = readg(EFIT.test_gfile)
 g2 = readg(EFIT.test_gfile2)
@@ -174,8 +174,14 @@ end
     # Add one geqdsk
     println("test file 1 info: filename = $(gs[1].file), time = $(gs[1].time)")
     dd = IMASdd.dd()
-    eqt = resize!(dd.equilibrium.time_slice, length(gs))[1]
     dd.equilibrium.time = [g.time for g in gs]
+
+    resize!(dd.equilibrium.time_slice, length(gs))
+    for (k, eqt) in pairs(dd.equilibrium.time_slice)
+        eqt.time = gs[k].time
+    end
+
+    eqt = dd.equilibrium.time_slice[1]
     EFIT.geqdsk2imas!(gs[1], eqt; wall=dd.wall, cocos_clockwise_phi=cocos_clockwise_phi, add_derived=true)
     @test length(eqt.profiles_2d[1].grid.dim1) > 1
     @test eqt.time == gs[1].time
