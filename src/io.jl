@@ -276,24 +276,25 @@ function writeg(g::GEQDSKFile, filename::String;
         @warn("Warning: A file with the name '$filename' already exists. It will be overwritten.")
     end
 
+    # Note: GEQDSKFile.time is converted to ms (to follow readg's notation)
+    # Remove all newline characters in description
+    clean_desc = replace(desc, "\n" => "")
+    description = join([clean_desc, shot, time], "   ")
+    if length(description) > 48
+        error("""
+            Description too long (length = $(length(description)) > max 48).
+            Current description: '$description'
+            Please shorten one or more of the following kwargs:
+                desc = "$desc"
+                shot = "$shot"
+                time = "$time"
+            """)
+    end
+
     try
         # Open the target file for writing
         open(filename, "w") do f
             # Write header
-            # Note: GEQDSKFile.time is converted to ms (to follow readg's notation)
-            # Remove all newline characters in description
-            clean_desc = replace(desc, "\n" => "")
-            description = join([clean_desc, shot, time], "   ")
-
-            if length(description) > 48
-                @error "Description too long (length = $(length(description)) > max 48).\n" *
-                      "Current description: '$description'\n" *
-                      "Please shorten one or more of the following kwargs:\n" *
-                      "  desc = \"$desc\"\n" *
-                      "  shot = \"$shot\"\n" *
-                      "  time = \"$time\""
-            end
-
             @printf(f,"%-48s%4d%4d%4d\n",description, 0, g.nw, g.nh)
 
             @printf(f,"%16.9E%16.9E%16.9E%16.9E%16.9E\n", g.rdim, g.zdim, g.rcentr, g.rleft, g.zmid)
@@ -321,7 +322,8 @@ function writeg(g::GEQDSKFile, filename::String;
         @info "Successfully wrote GEQDSKFile to '$filename'."
         return true
     catch e
-        @error "An error occurred while writing to file '$filename': $e"
+        @error """An error occurred while writing to file '$filename':
+             $(sprint(showerror, e))"""
         return false
     end
 end
