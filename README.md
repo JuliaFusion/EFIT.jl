@@ -5,9 +5,9 @@
 [EFIT (Equilibrium Fitting)](https://fusion.gat.com/theory/Efit) is a computer code developed to translate measurements from plasma diagnostics into useful information like plasma geometry, stored energy, and current profiles.
 
 
-EFIT.jl provides basic functionality for reading [EFIT GEQDSK](https://fusion.gat.com/theory/Efitgeqdsk) files.
+`EFIT.jl` provides basic functionality for reading [EFIT GEQDSK](https://fusion.gat.com/theory/Efitgeqdsk) files.
 
-```
+```julia-repl
 julia> using EFIT
 
 julia> g = readg(EFIT.test_gfile);
@@ -40,4 +40,25 @@ julia> minor_radius(g)
 
 julia> aspect_ratio(g)
 2.6031891587258285
+```
+
+
+`EFIT.jl` can convert `dd` into GEQDSK files as in the following example:
+```julia
+import EFIT
+import EFIT.IMASdd
+
+# Load example dd
+filename = joinpath(dirname(dirname(pathof(EFIT))), "test", "test_dd_eq.json")
+dd = IMASdd.json2imas(filename);
+
+# First, convert equilibrium time_slices in dd to a list of `GEQDSK` struct
+ggs = EFIT.imas2geqdsk(dd)
+
+# Then, write into files
+for gg in ggs
+    # default file name has "g00000.xxxxx" format, where xxxxx is time in `ms`
+    file_name = gg.file
+    EFIT.writeg(gg, file_name)
+end
 ```

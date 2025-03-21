@@ -118,7 +118,7 @@ end
         @test isequal(new_g, ori_g)
 
         # keywords test
-        @test writeg(new_g, "my_equilibrium.geqdsk"; desc="my description", shot="my shot 12345", time="1000ms")
+        @test writeg(new_g, tmp_filename; desc="my description", shot="my shot 12345", time="1000ms")
         @test_throws Exception writeg(ori_g, tmp_filename; desc="This is a long description that will cause an error.")
 
         # Delete temporary file
