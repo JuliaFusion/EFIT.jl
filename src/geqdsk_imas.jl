@@ -475,21 +475,31 @@ function imas2geqdsk(
         zbbbs = eqt.boundary.outline.z ./ tc["Z"]
         nbbbs = length(rbbbs)
 
-        # 1D profiles
-        p1 = eqt.profiles_1d
-        psi = p1.psi ./ tc["PSI"]
-        qpsi = p1.q ./ tc["Q"]
-        pres = p1.pressure ./ tc["P"]
-        pprime = p1.dpressure_dpsi ./ tc["PPRIME"]
-        fpol = p1.f ./ tc["F"]
-        ffprim = p1.f_df_dpsi ./ tc["F_FPRIME"]
-        rhovn = p1.rho_tor_norm
-
         # 2D flux map
-        p2 = eqt.profiles_2d[1]
+        p2 = findfirst(:rectangular, eqt.profiles_2d)
         r = p2.grid.dim1 ./ tc["R"]
         z = p2.grid.dim2 ./ tc["Z"]
         psirz = p2.psi ./ tc["PSI"]
+
+        # 1D profiles
+        function interpolate_1d_profile(ori_1D::AbstractVector{<:Real}, N::Int)
+            if length(ori_1D) == N
+                return ori_1D
+            else
+                itp=IMASdd.interp1d(p1.psi_norm, ori_1D, :cubic)
+                return itp.(range(0,1,N))
+            end
+        end
+
+        p1 = eqt.profiles_1d
+        nw = length(r)
+        psi = interpolate_1d_profile(p1.psi ./ tc["PSI"], nw)
+        qpsi = interpolate_1d_profile(p1.q ./ tc["Q"], nw)
+        pres = interpolate_1d_profile(p1.pressure ./ tc["P"], nw)
+        pprime = interpolate_1d_profile(p1.dpressure_dpsi ./ tc["PPRIME"], nw)
+        fpol = interpolate_1d_profile(p1.f ./ tc["F"], nw)
+        ffprim = interpolate_1d_profile(p1.f_df_dpsi ./ tc["F_FPRIME"], nw)
+        rhovn = interpolate_1d_profile(p1.rho_tor_norm, nw)
 
         bcentr = IMASdd.@ddtime(dd.equilibrium.vacuum_toroidal_field.b0) ./ tc["B"]
         time = eqt.time

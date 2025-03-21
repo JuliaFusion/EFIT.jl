@@ -1,8 +1,8 @@
 using Test
 using EFIT
 import EFIT
-import IMASdd
-import CoordinateConventions
+import EFIT.IMASdd
+import EFIT.CoordinateConventions
 
 g = readg(EFIT.test_gfile)
 g2 = readg(EFIT.test_gfile2)
@@ -117,6 +117,10 @@ end
         @test new_g == ori_g
         @test isequal(new_g, ori_g)
 
+        # keywords test
+        @test writeg(new_g, tmp_filename; desc="my description", shot="my shot 12345", time="1000ms")
+        @test_throws Exception writeg(ori_g, tmp_filename; desc="This is a long description that will cause an error.")
+
         # Delete temporary file
         rm(tmp_filename, force=true)
     end
@@ -174,8 +178,14 @@ end
     # Add one geqdsk
     println("test file 1 info: filename = $(gs[1].file), time = $(gs[1].time)")
     dd = IMASdd.dd()
-    eqt = resize!(dd.equilibrium.time_slice, length(gs))[1]
     dd.equilibrium.time = [g.time for g in gs]
+
+    resize!(dd.equilibrium.time_slice, length(gs))
+    for (k, eqt) in pairs(dd.equilibrium.time_slice)
+        eqt.time = gs[k].time
+    end
+
+    eqt = dd.equilibrium.time_slice[1]
     EFIT.geqdsk2imas!(gs[1], eqt; wall=dd.wall, cocos_clockwise_phi=cocos_clockwise_phi, add_derived=true)
     @test length(eqt.profiles_2d[1].grid.dim1) > 1
     @test eqt.time == gs[1].time
@@ -255,4 +265,56 @@ end
     # as this is the sample with the funky time units in the header, we'll help with the filename
     gg3.file = gs[2].file
     gcompare(gg3, gs[2])
+end
+
+@testset "imas2geqdsk & geqdsk2imas!" begin
+    ori_dd = IMASdd.json2imas("test_dd_eq.json")
+
+    gg=EFIT.imas2geqdsk(ori_dd)
+
+    new_dd = IMASdd.dd()
+    EFIT.geqdsk2imas!(gg, new_dd)
+
+    # compare wall
+    @test new_dd.wall == ori_dd.wall
+    @test new_dd.equilibrium.vacuum_toroidal_field == ori_dd.equilibrium.vacuum_toroidal_field
+
+    ori_eqt = ori_dd.equilibrium.time_slice[]
+    new_eqt = new_dd.equilibrium.time_slice[]
+
+    # compare boundary
+    @test new_eqt.boundary.geometric_axis == ori_eqt.boundary.geometric_axis
+    @test new_eqt.boundary.outline == ori_eqt.boundary.outline
+
+    # compare global_quantities
+    ori_gq = new_eqt.global_quantities
+    new_gq = new_eqt.global_quantities
+
+    @test ori_gq.ip == new_gq.ip
+    @test ori_gq.magnetic_axis == new_gq.magnetic_axis
+    @test ori_gq.psi_axis == new_gq.psi_axis
+    @test ori_gq.psi_boundary == new_gq.psi_boundary
+
+    # compare profiles_1d
+    ori_p1d = ori_eqt.profiles_1d
+    new_p1d = new_eqt.profiles_1d
+
+    target_fields = filter(x -> x ∉ IMASdd.private_fields, fieldnames(typeof(new_p1d)))
+    for field in target_fields
+        if !ismissing(new_p1d, field) && !isempty(new_p1d, field)
+            ori1D_vec = getproperty(ori_p1d, field)
+            new1D_vec = getproperty(new_p1d, field)
+
+            itp=IMASdd.interp1d(ori_p1d.psi_norm, ori1D_vec, :cubic)
+            @test isapprox(new1D_vec, itp.(range(0,1, length(new_p1d.psi))))
+        end
+    end
+
+    # compare profiles_2d
+    ori_p2d = findfirst(:rectangular, ori_eqt.profiles_2d)
+    new_p2d = findfirst(:rectangular, new_eqt.profiles_2d)
+
+    @test new_p2d.grid == ori_p2d.grid
+    @test isapprox(new_p2d.psi, ori_p2d.psi)
+
 end
