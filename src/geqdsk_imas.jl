@@ -509,7 +509,7 @@ function imas2geqdsk(
         zdim = maximum(z) - minimum(z)
         nw = length(r)
         nh = length(z)
-        itime = Int(round(time * 1000))
+        itime = round(Int, time * 1000)
         gfile = "g" * lpad(shot, 6, '0') * "." * lpad(itime, 5, '0')
         @debug "shot $shot, gfile = $gfile"
 
