@@ -1,7 +1,7 @@
 name = "EFIT"
 uuid = "cda752c5-6b03-55a3-9e33-132a441b0c17"
 author = ["Luke Stagner <stagnerl@fusion.gat.com>"]
-version = "1.2.4"
+version = "1.2.5"
 
 [deps]
 CoordinateConventions = "7204ce3a-f536-43d2-be4a-fbed74e90d86"
