@@ -266,9 +266,9 @@ end
 
 # Function to write the GEQDSKFile struct to a G-file with explicit error handling
 function writeg(g::GEQDSKFile, filename::String;
-                desc::String="EFIT.jl   $(Dates.format(Dates.today(), "dd/mm/yyyy"))",
+                desc::String="EFITjl",
                 shot::String="#000000",
-                time::String= @sprintf("%dms", 1e3 * g.time))
+                time::String= @sprintf("%dms", round(Int, 1e3 * g.time)))
     if isdir(filename)
         @error("Error: A directory with the name '$filename' already exists.")
         return false
@@ -276,27 +276,36 @@ function writeg(g::GEQDSKFile, filename::String;
         @warn("Warning: A file with the name '$filename' already exists. It will be overwritten.")
     end
 
-    # Note: GEQDSKFile.time is converted to ms (to follow readg's notation)
-    # Remove all newline characters in description
-    clean_desc = replace(desc, "\n" => "")
-    description = join([clean_desc, shot, time], "   ")
-    if length(description) > 48
-        error("""
-            Description too long (length = $(length(description)) > max 48).
-            Current description: '$description'
-            Please shorten one or more of the following kwargs:
-                desc = "$desc"
-                shot = "$shot"
-                time = "$time"
-            """)
-    end
+    # Build 48-char header as 6 × 8-char fields matching Fortran 2000 format (6a8)
+    # Layout mirrors EFIT: "  CODE    dd/mm/yyyy    #shot   time    "
+    date_str = Dates.format(Dates.today(), "dd/mm/yyyy")
+
+    # --- Build 6 × a8 fields (exactly 8 chars each) ---
+    v1 = @sprintf("  %-6.6s", desc)               # "  CODE  "
+    v2 = @sprintf("   %-5.5s", date_str[1:6])     # "   dd/mm"
+    v3 = @sprintf("%-8.8s", date_str[7:10])       # "yyyy    "
+
+    # shot formatting (matches EFIT branching)
+    v4 = rpad(shot, 8)[1:8]
+    v5 = rpad(time, 8)[1:8]
+
+    v6 = "        "  # 8 spaces
+
+
+    v1 = rpad("  " * desc[1:min(end,6)],8)[1:8]
+    v2 = rpad("   " * date_str[1:5],8)[1:8]
+    v3 = rpad(date_str[6:10],8)[1:8]
+    v4 = lpad(shot,8)[1:8]
+    v5 = lpad(time, 8)[1:8]
+    v6 = "        "
+
+    # concatenate
+    description = v1 * v2 * v3 * v4 * v5 * v6
 
     try
         # Open the target file for writing
         open(filename, "w") do f
-            # Write header
-            @printf(f,"%-48s%4d%4d%4d\n",description, 0, g.nw, g.nh)
-
+            @printf(f, "%s%4d%4d%4d\n", description, 0, g.nw, g.nh)
             @printf(f,"%16.9E%16.9E%16.9E%16.9E%16.9E\n", g.rdim, g.zdim, g.rcentr, g.rleft, g.zmid)
             @printf(f,"%16.9E%16.9E%16.9E%16.9E%16.9E\n", g.rmaxis, g.zmaxis, g.simag, g.sibry, g.bcentr)
             @printf(f,"%16.9E%16.9E%16.9E%16.9E%16.9E\n", g.current, g.simag, 0.0, g.rmaxis, 0.0)
@@ -311,13 +320,17 @@ function writeg(g::GEQDSKFile, filename::String;
 
             write_vector_data_in_chunks(f, g.qpsi)
 
-            @printf(f,"%d %d\n", g.nbbbs, g.limitr)
+            @printf(f,"%5d%5d\n", g.nbbbs, g.limitr)
 
             bbbs_rz = Vector(vec(hcat(g.rbbbs, g.zbbbs)'))
             write_vector_data_in_chunks(f, vec(bbbs_rz))
 
             lim_rz = Vector(vec(hcat(g.rlim, g.zlim)'))
             write_vector_data_in_chunks(f, vec(lim_rz))
+
+            @printf(f,"%5d%16.9E%5d\n", 0, 0.0, 0)
+            write_vector_data_in_chunks(f, g.rhovn)
+            @printf(f,"%5d\n", 0)
         end
         @info "Successfully wrote GEQDSKFile to '$filename'."
         return true

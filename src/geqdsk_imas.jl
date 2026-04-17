@@ -469,8 +469,6 @@ function imas2geqdsk(
         current = gq.ip / tc["I"]
         simag = gq.psi_axis / tc["PSI"]
         sibry = gq.psi_boundary / tc["PSI"]
-        rcentr = eqt.boundary.geometric_axis.r / tc["R"]
-        zmid = eqt.boundary.geometric_axis.z / tc["Z"]
         rbbbs = eqt.boundary.outline.r ./ tc["R"]
         zbbbs = eqt.boundary.outline.z ./ tc["Z"]
         nbbbs = length(rbbbs)
@@ -500,13 +498,14 @@ function imas2geqdsk(
         fpol = interpolate_1d_profile(p1.f ./ tc["F"], nw)
         ffprim = interpolate_1d_profile(p1.f_df_dpsi ./ tc["F_FPRIME"], nw)
         rhovn = interpolate_1d_profile(p1.rho_tor_norm, nw)
-
+        rcentr = dd.equilibrium.vacuum_toroidal_field.r0
         bcentr = IMASdd.@ddtime(dd.equilibrium.vacuum_toroidal_field.b0) ./ tc["B"]
         time = eqt.time
         @debug "eqt.time = $(eqt.time), time out = $time"
         rleft = minimum(r)
         rdim = maximum(r) - rleft
         zdim = maximum(z) - minimum(z)
+        zmid = 0.5 * (maximum(z) + minimum(z))
         nw = length(r)
         nh = length(z)
         itime = round(Int, time * 1000)
