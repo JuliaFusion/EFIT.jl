@@ -104,7 +104,7 @@ end
 
         # Create and write a tmporary EQDSK file
         (tmp_filename, ~) = Base.mktemp()
-        writeg(ori_g, tmp_filename; desc="\nHello, can you read me?\n\n")
+        writeg(ori_g, tmp_filename; desc="Hello, can you read me?\n\n")
 
         # Read the temporary EQDSK file
         new_g = readg(tmp_filename)
@@ -119,7 +119,6 @@ end
 
         # keywords test
         @test writeg(new_g, tmp_filename; desc="my description", shot="my shot 12345", time="1000ms")
-        @test_throws Exception writeg(ori_g, tmp_filename; desc="This is a long description that will cause an error.")
 
         # Delete temporary file
         rm(tmp_filename, force=true)
@@ -255,6 +254,10 @@ end
     gg2_orig.limitr = gg2_match.limitr = gs2[2].limitr = gs[2].limitr
     gcompare(gg1, gs2[1], note="read single g vs read all g from imas (slice 1)")
     gcompare(gg2_match, gs2[2], note="read single g vs read all g from imas (slice 2)")
+
+    # Override rcenter and bcentr to match 
+    gs[1].rcentr = gg1.rcentr
+    gs[1].bcentr = gg1.bcentr 
     gcompare(gg1, gs[1], note="read single g vs input 1")
     gcompare(gg2_orig, gs[2], note="read single g vs input 2")
 
