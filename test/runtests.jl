@@ -102,8 +102,11 @@ end
 
         ori_g = readg(EFIT.test_gfile)
 
-        # Create and write a tmporary EQDSK file
-        (tmp_filename, ~) = Base.mktemp()
+        # Create and write a tmporary EQDSK file.
+        # Use `tempname()` (path only) instead of `mktemp()` to avoid leaving
+        # an open IO handle, which would cause `rm` below to fail on Windows
+        # (POSIX permits unlink while a handle is open, Windows does not).
+        tmp_filename = tempname()
         writeg(ori_g, tmp_filename; desc="Hello, can you read me?\n\n")
 
         # Read the temporary EQDSK file
