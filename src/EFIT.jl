@@ -1,5 +1,7 @@
 module EFIT
 
+using FastInterpolations
+
 include("io.jl")
 export readg, writeg, GEQDSKFile
 

@@ -4,6 +4,7 @@ using TestItemRunner
     using EFIT
     import EFIT.IMASdd
     import EFIT.CoordinateConventions
+    using EFIT.FastInterpolations
     g  = readg(EFIT.test_gfile)
     g2 = readg(EFIT.test_gfile2)
 end
@@ -318,8 +319,8 @@ end
             ori1D_vec = getproperty(ori_p1d, field)
             new1D_vec = getproperty(new_p1d, field)
 
-            itp = IMASdd.interp1d(ori_p1d.psi_norm, ori1D_vec, :cubic)
-            @test isapprox(new1D_vec, itp.(range(0, 1, length(new_p1d.psi))))
+            itp = pchip_interp(ori_p1d.psi_norm, ori1D_vec)
+            @test isapprox(new1D_vec, itp(range(0, 1, length(new_p1d.psi))))
         end
     end
 

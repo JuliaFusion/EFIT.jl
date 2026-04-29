@@ -474,8 +474,7 @@ function imas2geqdsk(
             if length(ori_1D) == N
                 return ori_1D
             else
-                itp=IMASdd.interp1d(p1.psi_norm, ori_1D, :cubic)
-                return itp.(range(0,1,N))
+                return pchip_interp(p1.psi_norm, ori_1D, range(0, 1, N))
             end
         end
 
