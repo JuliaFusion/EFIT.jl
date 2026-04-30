@@ -82,23 +82,6 @@ function geqdsk2imas!(
         end
     end
 
-    # Write top level data
-    eq.time = [g.time for g in gs]
-    bb = zeros(length(gs))
-    for i in 1:length(gs)
-        if geqdsk_cocos == 0
-            g = gs[i]
-            geqdsk_cocos_ = CoordinateConventions.identify_cocos(
-                sign(g.bcentr), sign(g.current), sign(g.qpsi[1]), sign(g.psi[end] - g.psi[1]), cocos_clockwise_phi,
-            )[1]
-        else
-            geqdsk_cocos_ = geqdsk_cocos
-        end
-        tc = CoordinateConventions.transform_cocos(geqdsk_cocos_, dd_cocos)
-        bb[i] = g.bcentr .* tc["B"]
-    end
-    eq.vacuum_toroidal_field.b0 = bb
-    eq.vacuum_toroidal_field.r0 = gs[1].rcentr
 
     for g in gs
         geqdsk2imas!(
@@ -106,6 +89,11 @@ function geqdsk2imas!(
             geqdsk_cocos=geqdsk_cocos, dd_cocos=dd_cocos, cocos_clockwise_phi=cocos_clockwise_phi,
             add_derived=add_derived,
         )
+    end
+
+    # Rescale each time-slice b0 to the common r0 reference  (B₀·R₀ = const).
+    for tt in eachindex(gs)
+        eq.vacuum_toroidal_field.b0[tt] *= gs[tt].rcentr / eq.vacuum_toroidal_field.r0
     end
 end
 
@@ -253,10 +241,12 @@ function geqdsk2imas!(
     gq.ip = g.current * tc["I"]
     gq.psi_axis = g.simag * tc["PSI"]
     gq.psi_boundary = g.sibry * tc["PSI"]
-    eqt.boundary.geometric_axis.r = g.rcentr * tc["R"]
-    eqt.boundary.geometric_axis.z = g.zmid * tc["Z"]
+
     eqt.boundary.outline.r = g.rbbbs .* tc["R"]
     eqt.boundary.outline.z = g.zbbbs .* tc["Z"]
+
+    eqt.boundary.geometric_axis.r = 0.5 * sum(extrema(eqt.boundary.outline.r))
+    eqt.boundary.geometric_axis.z = 0.5 * sum(extrema(eqt.boundary.outline.z))
 
     # 1D profiles
     p1 = eqt.profiles_1d
@@ -484,8 +474,7 @@ function imas2geqdsk(
             if length(ori_1D) == N
                 return ori_1D
             else
-                itp=IMASdd.interp1d(p1.psi_norm, ori_1D, :cubic)
-                return itp.(range(0,1,N))
+                return pchip_interp(p1.psi_norm, ori_1D, range(0, 1, N))
             end
         end
 
@@ -498,7 +487,7 @@ function imas2geqdsk(
         fpol = interpolate_1d_profile(p1.f ./ tc["F"], nw)
         ffprim = interpolate_1d_profile(p1.f_df_dpsi ./ tc["F_FPRIME"], nw)
         rhovn = interpolate_1d_profile(p1.rho_tor_norm, nw)
-        rcentr = dd.equilibrium.vacuum_toroidal_field.r0
+        rcentr = dd.equilibrium.vacuum_toroidal_field.r0 / tc["R"]
         bcentr = IMASdd.@ddtime(dd.equilibrium.vacuum_toroidal_field.b0) ./ tc["B"]
         time = eqt.time
         @debug "eqt.time = $(eqt.time), time out = $time"

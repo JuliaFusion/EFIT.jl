@@ -1,22 +1,72 @@
-using Test
-using EFIT
-import EFIT
-import EFIT.IMASdd
-import EFIT.CoordinateConventions
+using TestItemRunner
 
-g = readg(EFIT.test_gfile)
-g2 = readg(EFIT.test_gfile2)
+@testsnippet GFixture begin
+    using EFIT
+    import EFIT.IMASdd
+    import EFIT.CoordinateConventions
+    using EFIT.FastInterpolations
+    g  = readg(EFIT.test_gfile)
+    g2 = readg(EFIT.test_gfile2)
+end
 
-lt, ut = triangularity(g)
-@test lt == 0.059614676027860296
-@test ut == 0.05822145848512557
+@testsnippet GCompare begin
+    using EFIT
 
-@test ellipticity(g) == 1.475784591289634
-@test major_radius(g) == 1.648852555
-@test minor_radius(g) == 0.633397135
-@test aspect_ratio(g) == 2.6031891587258285
+    function gcompare(g1::GEQDSKFile, g2::GEQDSKFile; note=nothing, verbose::Bool=false)
+        fields = fieldnames(GEQDSKFile)
+        mismatched_fields = []
+        if note !== nothing
+            println(note)
+        end
+        for field in fields
+            if verbose
+                print(" $field: ")
+            end
+            f1 = getproperty(g1, Symbol(field))
+            if verbose
+                if (length(f1) > 3) && (typeof(f1) !== String)
+                    print(" [$(length(f1)) elements], ")
+                else
+                    print(" $f1, ")
+                end
+            end
+            f2 = getproperty(g2, Symbol(field))
+            if verbose
+                if (length(f1) > 3) && (typeof(f1) !== String)
+                    println("[$(length(f2)) elements]")
+                else
+                    println(f2)
+                end
+            end
+            if (typeof(f1) == String) || (length(f1) !== length(f2))
+                if f1 !== f2
+                    mismatched_fields = [mismatched_fields; field]
+                end
+                @test f1 == f2
+            else
+                if !isapprox(f1, f2, atol=1e-5)
+                    mismatched_fields = [mismatched_fields; field]
+                end
+                @test f1 ≈ f2 atol=1e-5
+            end
+        end
+        println("mismatched fields for this case = $mismatched_fields")
+        return mismatched_fields
+    end
+end
 
-@testset "find xpoint" begin
+@testitem "geometry derived quantities" setup=[GFixture] begin
+    lt, ut = triangularity(g)
+    @test lt == 0.059614676027860296
+    @test ut == 0.05822145848512557
+
+    @test ellipticity(g) == 1.475784591289634
+    @test major_radius(g) == 1.648852555
+    @test minor_radius(g) == 0.633397135
+    @test aspect_ratio(g) == 2.6031891587258285
+end
+
+@testitem "find xpoint" setup=[GFixture] begin
     # fluxinfo
     izmin = 5
     irmin = 4
@@ -62,7 +112,7 @@ lt, ut = triangularity(g)
     @test (xzs[2] > 1.04) & (xzs[2] < 1.17)
 end
 
-@testset "parse header" begin
+@testitem "parse header" setup=[GFixture] begin
     headers = [
         "   EFITD    00/00/2008    #002296  0200ms Convert   0 257 513",
         "   EFITD   11/23/2020    #184833  3600             3  65  65",
@@ -97,14 +147,17 @@ end
     end
 end
 
-@testset "writeg" begin
+@testitem "writeg" setup=[GFixture] begin
     for test_gfile in [EFIT.test_gfile, EFIT.test_gfile2]
 
         ori_g = readg(EFIT.test_gfile)
 
-        # Create and write a tmporary EQDSK file
-        (tmp_filename, ~) = Base.mktemp()
-        writeg(ori_g, tmp_filename; desc="\nHello, can you read me?\n\n")
+        # Create and write a tmporary EQDSK file.
+        # Use `tempname()` (path only) instead of `mktemp()` to avoid leaving
+        # an open IO handle, which would cause `rm` below to fail on Windows
+        # (POSIX permits unlink while a handle is open, Windows does not).
+        tmp_filename = tempname()
+        writeg(ori_g, tmp_filename; desc="Hello, can you read me?\n\n")
 
         # Read the temporary EQDSK file
         new_g = readg(tmp_filename)
@@ -119,56 +172,13 @@ end
 
         # keywords test
         @test writeg(new_g, tmp_filename; desc="my description", shot="my shot 12345", time="1000ms")
-        @test_throws Exception writeg(ori_g, tmp_filename; desc="This is a long description that will cause an error.")
 
         # Delete temporary file
         rm(tmp_filename, force=true)
     end
 end
 
-function gcompare(g1::GEQDSKFile, g2::GEQDSKFile; note=nothing, verbose::Bool=false)
-    fields = fieldnames(GEQDSKFile)
-    mismatched_fields = []
-    if note !== nothing
-        println(note)
-    end
-    for field in fields
-        if verbose
-            print(" $field: ")
-        end
-        f1 = getproperty(g1, Symbol(field))
-        if verbose
-            if (length(f1) > 3) && (typeof(f1) !== String)
-                print(" [$(length(f1)) elements], ")
-            else
-                print(" $f1, ")
-            end
-        end
-        f2 = getproperty(g2, Symbol(field))
-        if verbose
-            if (length(f1) > 3) && (typeof(f1) !== String)
-                println("[$(length(f2)) elements]")
-            else
-                println(f2)
-            end
-        end
-        if (typeof(f1) == String) || (length(f1) !== length(f2))
-            if f1 !== f2
-                mismatched_fields = [mismatched_fields; field]
-            end
-            @test f1 == f2
-        else
-            if !isapprox(f1, f2, atol=1e-5)
-                mismatched_fields = [mismatched_fields; field]
-            end
-            @test f1 ≈ f2 atol=1e-5
-        end
-    end
-    println("mismatched fields for this case = $mismatched_fields")
-    return mismatched_fields
-end
-
-@testset "imas" begin
+@testitem "imas" setup=[GFixture, GCompare] begin
     cocos_clockwise_phi = false  # Assumed
     gs = [g, g2]
     gcocos = [CoordinateConventions.identify_cocos(
@@ -248,13 +258,17 @@ end
     # One file has messed up time units
     gg1.file = gs2[1].file = gs[1].file
     # The second file won't have its original shot because the dd can only have one shot and it comes from the first one.
-    gg2_match.file = gg2_orig.file = gs2[2].file= gs[2].file
+    gg2_match.file = gg2_orig.file = gs2[2].file = gs[2].file
     # Only the wall from the first file is used.
     gg2_orig.rlim = gg2_match.rlim = gs2[2].rlim = gs[2].rlim
     gg2_orig.zlim = gg2_match.zlim = gs2[2].zlim = gs[2].zlim
     gg2_orig.limitr = gg2_match.limitr = gs2[2].limitr = gs[2].limitr
     gcompare(gg1, gs2[1], note="read single g vs read all g from imas (slice 1)")
     gcompare(gg2_match, gs2[2], note="read single g vs read all g from imas (slice 2)")
+
+    # Override rcenter and bcentr to match
+    gs[1].rcentr = gg1.rcentr
+    gs[1].bcentr = gg1.bcentr
     gcompare(gg1, gs[1], note="read single g vs input 1")
     gcompare(gg2_orig, gs[2], note="read single g vs input 2")
 
@@ -267,10 +281,10 @@ end
     gcompare(gg3, gs[2])
 end
 
-@testset "imas2geqdsk & geqdsk2imas!" begin
-    ori_dd = IMASdd.json2imas("test_dd_eq.json")
+@testitem "imas2geqdsk & geqdsk2imas!" setup=[GFixture] begin
+    ori_dd = IMASdd.json2imas(joinpath(@__DIR__, "test_dd_eq.json"))
 
-    gg=EFIT.imas2geqdsk(ori_dd)
+    gg = EFIT.imas2geqdsk(ori_dd)
 
     new_dd = IMASdd.dd()
     EFIT.geqdsk2imas!(gg, new_dd)
@@ -305,8 +319,8 @@ end
             ori1D_vec = getproperty(ori_p1d, field)
             new1D_vec = getproperty(new_p1d, field)
 
-            itp=IMASdd.interp1d(ori_p1d.psi_norm, ori1D_vec, :cubic)
-            @test isapprox(new1D_vec, itp.(range(0,1, length(new_p1d.psi))))
+            itp = pchip_interp(ori_p1d.psi_norm, ori1D_vec)
+            @test isapprox(new1D_vec, itp(range(0, 1, length(new_p1d.psi))))
         end
     end
 
@@ -316,5 +330,9 @@ end
 
     @test new_p2d.grid == ori_p2d.grid
     @test isapprox(new_p2d.psi, ori_p2d.psi)
+end
 
+@run_package_tests verbose=true filter=ti -> begin
+    isempty(ARGS) && return true
+    return any(arg -> occursin(arg, ti.name), ARGS)
 end

@@ -1,3 +1,4 @@
+[![CI](https://github.com/JuliaFusion/EFIT.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/JuliaFusion/EFIT.jl/actions/workflows/CI.yml)
 [![Build Status](https://travis-ci.org/JuliaFusion/EFIT.jl.svg?branch=master)](https://travis-ci.org/JuliaFusion/EFIT.jl)
 
 # EFIT
